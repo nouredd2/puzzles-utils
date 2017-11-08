@@ -1,6 +1,9 @@
 from scapy.all import *
 import sys
 import os
+import numpy as np
+import scipy.stats
+import matplotlib.pyplot as plt
 
 from scapy.layers.inet import TCP, IP
 
@@ -32,7 +35,7 @@ for pkt in pz_cap:
                 timing[src] = {}
             else:
                 # print pkt[TCP].seq, pkt[TCP].ack
-                timing[src][pkt[TCP].seq] = [ pkt ]
+                timing[src][pkt[TCP].seq] = [pkt]
 
         # Server response
         if pkt[TCP].flags & SYN and (pkt[TCP].flags & ACK):
@@ -41,7 +44,7 @@ for pkt in pz_cap:
             if dst in timing:  # if we do not have a SYN we ignore it
                 if pkt[TCP].ack - 1 in timing[dst]:
                     # print pkt[TCP].seq, pkt[TCP].ack
-                    timing[dst][pkt[TCP].ack - 1].append( pkt )
+                    timing[dst][pkt[TCP].ack - 1].append(pkt)
 
         # Client response
         if not (pkt[TCP].flags & SYN) and (pkt[TCP].flags & ACK):
@@ -50,11 +53,11 @@ for pkt in pz_cap:
                 # Reconstruct initial seq number
                 #
                 if pkt[TCP].seq - 1 in timing[src]:
-                    timing[src][pkt[TCP].seq - 1].append( pkt )
+                    timing[src][pkt[TCP].seq - 1].append(pkt)
 
-con_time_results = {}
-retran = {}
-# Compute connection time (time between last SYN and first ACK)
+connection_time = {}
+retransmission_count = {}
+# Compute connection time (time between first SYN and first ACK)
 # Number of unanswered SYN (count retransmissions)
 for host in timing.iterkeys():
     for seq in timing[host].iterkeys():
@@ -69,18 +72,41 @@ for host in timing.iterkeys():
                     # ###### Count the number of SYN retransmissions
                     if syn_time > 0:
                         # More than one SYN
-                        if host not in retran:
-                            retran[host] = 0
-                        retran[host] = retran[host] + 1
+                        if host not in retransmission_count:
+                            retransmission_count[host] = 0
+                        retransmission_count[host] = retransmission_count[host] + 1
                     syn_time = pkt.time
                 if pkt[TCP].flags & SYN and (pkt[TCP].flags & ACK):
-                    syn_ack_time = pkt.time
-                if not(pkt[TCP].flags & SYN) and (pkt[TCP].flags & ACK) and ack_time==0:
+                    if syn_time == 0:
+                        syn_ack_time = pkt.time
+                if not (pkt[TCP].flags & SYN) and (pkt[TCP].flags & ACK) and ack_time == 0:
                     ack_time = pkt.time
 
-    if host not in con_time_results:
-        con_time_results[host] = []
-    if ack_time > 0:
-        con_time_results[host].append(ack_time - syn_time)
+        if host not in connection_time:
+            connection_time[host] = []
+        if ack_time > 0:
+            connection_time[host].append(ack_time - syn_time)
 
+# Data analysis
+# (source: https://matplotlib.org/devdocs/api/_as_gen/matplotlib.pyplot.hist.html)
 
+for host in connection_time.iterkeys():
+    data = connection_time[host]
+    # test values for the bw_method option ('None' is the default value)
+    bw_values = [None, 0.1, 0.01]
+
+    # generate a list of kde estimators for each bw
+    # kde = [scipy.stats.gaussian_kde(data, bw_method=bw) for bw in bw_values]
+
+    # plot (normalized) histogram of the data
+    plt.figure()
+    plt.hist(data, normed=1, cumulative=True, facecolor='green', alpha=0.5); #,  histtype='step');
+
+    # plot density estimates
+    # t_range = np.linspace(-2, 8, 200)
+    # for i, bw in enumerate(bw_values):
+    #    plt.plot(t_range, kde[i](t_range), lw=2, label='bw = ' + str(bw))
+    plt.xlim(min(data), max(data))
+    # plt.legend(loc='best')
+    plt.title("Connection time for "+str(host))
+plt.show()
