@@ -1,0 +1,13 @@
+[Unit]
+Description=Magi service
+
+[Service]
+WorkingDirectory=/users/nouredd2
+User=root
+Type=forking
+ExecStart=/proj/ILLpuzzle/scripts/run_magi.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
