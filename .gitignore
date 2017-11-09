@@ -104,3 +104,6 @@ ENV/
 *.cap
 *.pdf
 .idea
+capfiles
+tarfiles/
+results/
