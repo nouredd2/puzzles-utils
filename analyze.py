@@ -1,6 +1,6 @@
+#!/usr/bin/python
+
 from scapy.all import *
-import sys
-import os
 import numpy as np
 import scipy.stats
 import matplotlib.pyplot as plt
@@ -12,20 +12,55 @@ from scapy.layers.inet import TCP, IP
 
 def set_up_arguments():
     parser = argparse.ArgumentParser(description="Analyze and dump plots.")
-    parser.add_argument('--file', '-f', type=str,
+    parser.add_argument('--file', '-f', type=str, required=True,
                         help="The input pcap file")
-    parser.add_argument('--out', '-o', type=str,
+    parser.add_argument('--out', '-o', type=str, required=True,
                         help="The out pdf file")
-    args = parser.parse_args()
+    parser.add_argument('--bins', '-b', type=int, default=50,
+                        help="The number of bins to use for the histogram")
+    parser.add_argument('--cdf', action='store_true',
+                        help="Toggle plotting cdf vs histogram (default is histogram)")
+    _args = parser.parse_args()
 
-    return args
+    return _args
 
 
-if __name__ == '__main__':
-    args = set_up_arguments()
-    infile = args.file
-    outfile = args.out
+def plot_cdf(_data, _num_bins, _ax, lbl):
+    values, base = np.histogram(_data, bins=_num_bins, density=True)
+    cumulative = np.cumsum(values) * (base[1] - base[0])
+    _ax.plot(base[:-1], cumulative, label=lbl)
 
+
+def plot_cdf(_data, _num_bins, _outfile):
+    # plot the cumulative histogram
+    fig = plt.figure()
+    plt.hist(_data, _num_bins, normed=1, histtype='step', cumulative=True)
+
+    # plt.legend(loc='best')
+    plt.title("Connection time for " + str(host))
+
+    with PdfPages(_outfile) as pdf:
+        pdf.savefig(fig)
+
+    plt.close()
+
+
+def plot_histogram(_data, _num_bins, _outfile):
+
+    # plot (normalized) histogram of the data
+    fig = plt.figure()
+    plt.hist(_data, _num_bins, normed=1, cumulative=True, facecolor='green', alpha=0.5)
+
+    plt.xlim(min(data), max(data))
+    plt.title("Connection time for " + str(host))
+
+    with PdfPages(_outfile) as pdf:
+        pdf.savefig(fig)
+
+    plt.close()
+
+
+def parse_file(fname):
     FIN = 0x01
     SYN = 0x02
     RST = 0x04
@@ -35,10 +70,10 @@ if __name__ == '__main__':
     ECE = 0x40
     CWR = 0x80
 
-    pz_cap = rdpcap(infile)
+    pz_cap = rdpcap(fname)
 
     timing = {}
-# handshake={}
+    # handshake={}
 
     for pkt in pz_cap:
         if TCP in pkt:
@@ -76,8 +111,8 @@ if __name__ == '__main__':
 
     connection_time = {}
     retransmission_count = {}
-# Compute connection time (time between first SYN and first ACK)
-# Number of unanswered SYN (count retransmissions)
+    # Compute connection time (time between first SYN and first ACK)
+    # Number of unanswered SYN (count retransmissions)
     for host in timing.iterkeys():
         for seq in timing[host].iterkeys():
             data = timing[host][seq]
@@ -106,31 +141,23 @@ if __name__ == '__main__':
             if ack_time > 0:
                 connection_time[host].append(ack_time - syn_time)
 
-# Data analysis
-# (source: https://matplotlib.org/devdocs/api/_as_gen/matplotlib.pyplot.hist.html)
+    return connection_time, retransmission_count
+
+
+if __name__ == '__main__':
+
+    args = set_up_arguments()
+    infile = args.file
+    outfile = args.out
+    num_bins = args.bins
+    do_cdf = args.cdf
+
+    connection_time, retransmission_count = parse_file(infile)
 
     for host in connection_time.iterkeys():
         data = connection_time[host]
-        # test values for the bw_method option ('None' is the default value)
-        bw_values = [None, 0.1, 0.01]
 
-        # generate a list of kde estimators for each bw
-        # kde = [scipy.stats.gaussian_kde(data, bw_method=bw) for bw in bw_values]
-
-        # plot (normalized) histogram of the data
-        fig = plt.figure()
-        # plt.hist(data, 50, normed=1, cumulative=True, facecolor='green', alpha=0.5) #,  histtype='step');
-        plt.hist(data, 50, normed=0, cumulative=True, facecolor='green', alpha=0.5) #,  histtype='step');
-
-        # plot density estimates
-        # t_range = np.linspace(-2, 8, 200)
-        # for i, bw in enumerate(bw_values):
-        #    plt.plot(t_range, kde[i](t_range), lw=2, label='bw = ' + str(bw))
-        plt.xlim(min(data), max(data))
-        # plt.legend(loc='best')
-        plt.title("Connection time for "+str(host))
-
-        with PdfPages(outfile) as pdf:
-            pdf.savefig(fig)
-
-        plt.close()
+        if do_cdf:
+            plot_cdf(data, num_bins, outfile)
+        else:
+            plot_histogram(data, num_bins, outfile)
