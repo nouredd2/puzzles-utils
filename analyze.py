@@ -32,10 +32,13 @@ def set_up_arguments():
     return _args
 
 
-def plot_cdf_ax(_data, _num_bins, _ax, lbl):
+def plot_cdf_ax(_data, _num_bins, _ax, lbl, logx):
     values, base = np.histogram(_data, bins=_num_bins, density=True)
     cumulative = np.cumsum(values) * (base[1] - base[0])
-    _ax.plot(base[:-1]*10e3, cumulative, label=lbl)
+    if (logx):
+        _ax.semilogx(base[:-1]*10e3, cumulative, label=lbl)
+    else:
+        _ax.plot(base[:-1]*10e3, cumulative, label=lbl)
 
 
 def plot_cdf(_data, _num_bins, _outfile):

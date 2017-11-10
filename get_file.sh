@@ -1,3 +1,3 @@
 #!/bin/sh
 
-scp deter:/proj/ILLpuzzle/$1 .
+scp deter:/proj/ILLpuzzle/results/$1 .

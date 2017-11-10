@@ -16,6 +16,8 @@ def prepare_arguments ():
                         help="The number of bins to use for the histogram")
     parser.add_argument('--outfile', '-o', type=str, default='sidebyside.pdf',
                         help="The output file to save to.")
+    parser.add_argument('--logx', action='store_true',
+                        help="Toggle switching to log scale on the x-axis")
     _args = parser.parse_args()
 
     return _args
@@ -44,7 +46,7 @@ if __name__ == '__main__':
         print ("Generating CDFs...")
         for host in conn.iterkeys():
             data = conn[host]
-            an.plot_cdf_ax(data, num_bins, ax, lbl)
+            an.plot_cdf_ax(data, num_bins, ax, lbl, args.logx)
 
     ax.grid(True)
     ax.legend(loc='best')
