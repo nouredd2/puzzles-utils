@@ -2,31 +2,49 @@
 
 import analyze as an
 import matplotlib.pyplot as plt
-import numpy as np
+import argparse
 from matplotlib.backends.backend_pdf import PdfPages
+
+
+def prepare_arguments ():
+    parser = argparse.ArgumentParser(description="Analyze and dump plots side by side.")
+    parser.add_argument('--files', '-f', type=str, required=True, nargs="+",
+                        help="The input pcap file")
+    parser.add_argument('--labels', '-l', type=str, nargs="+", required=True,
+                        help="The labels on the plots")
+    parser.add_argument('--bins', '-b', type=int, default=50,
+                        help="The number of bins to use for the histogram")
+    parser.add_argument('--outfile', '-o', type=str, default='sidebyside.pdf',
+                        help="The output file to save to.")
+    _args = parser.parse_args()
+
+    return _args
 
 
 if __name__ == '__main__':
 
-    num_bins = 1000
+    args = prepare_arguments()
+    num_bins = args.bins
+    files = args.files
+    labels = args.labels
+    outfile = args.outfile
 
-    pfile = "with-puzzles.cap"
-    npfile = "without-puzzles.cap"
-    outfile = 'sidebyside.pdf'
-
-    pconnection_time, prt = an.parse_file(pfile)
-    npconnection_time, nprt = an.parse_file(npfile)
+    # pfile = "with-puzzles.cap"
+    # npfile = "without-puzzles.cap"
+    # outfile = 'sidebyside.pdf'
 
     fig, ax = plt.subplots(figsize=(8, 4))
 
-    print ("Generating CDFs...")
-    for host in pconnection_time.iterkeys():
-        data = pconnection_time[host]
-        an.plot_cdf_ax(data, num_bins, ax, 'With puzzles')
-
-    for host in npconnection_time.iterkeys():
-        data = npconnection_time[host]
-        an.plot_cdf_ax(data, num_bins, ax, 'Without puzzles')
+    i = 0
+    for f in files:
+        print "Parsing ", f
+        conn, prt = an.parse_file(f)
+        lbl = labels[i]
+        i += 1
+        print ("Generating CDFs...")
+        for host in conn.iterkeys():
+            data = conn[host]
+            an.plot_cdf_ax(data, num_bins, ax, lbl)
 
     ax.grid(True)
     ax.legend(loc='best')
