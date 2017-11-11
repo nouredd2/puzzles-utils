@@ -2,20 +2,18 @@
 
 from scapy.all import *
 import numpy as np
-import scipy.stats
 import time
 import matplotlib.pyplot as plt
 import argparse
 from matplotlib.backends.backend_pdf import PdfPages
 import dpkt
 import socket
-import sys
-
-from scapy.layers.inet import TCP, IP
+from connection import TCPConnection
 
 
 def ip_to_str(address):
     return socket.inet_ntop(socket.AF_INET, address)
+
 
 def set_up_arguments():
     parser = argparse.ArgumentParser(description="Analyze and dump plots.")
@@ -118,68 +116,85 @@ def parse_file(fname):
 
             if src not in timing:
                 timing[src] = {}
+
+            # print pkt[TCP].seq, pkt[TCP].ack
+            if tcp.seq not in timing[src]:
+                timing[src][tcp.seq] = TCPConnection(src, tcp.seq, ts)
             else:
-                # print pkt[TCP].seq, pkt[TCP].ack
-                timing[src][tcp.seq] = [(ip,ts)]
+                conn = timing[src][tcp.seq]
+                conn.syn_retransmissions = np.append(conn.syn_retransmissions, ts)
+                timing[src][tcp.seq] = conn
 
         # Server response
         if tcp.flags & SYN and (tcp.flags & ACK):
             # handshake[ack - 1] = {ack:seq, t2: pkt.time }
             dst = ip_to_str(ip.dst)
             if dst in timing:  # if we do not have a SYN we ignore it
-                if tcp.ack - 1 in timing[dst]:
+                if (tcp.ack - 1) in timing[dst]:
                     # print pkt[TCP].seq, pkt[TCP].ack
-                    timing[dst][tcp.ack - 1].append((ip,ts))
+                    conn = timing[src][tcp.ack-1]
+                    conn.synack_received = ts
+                    timing[src][tcp.ack-1] = conn
+            else:
+                print "[WARNING:] Received SYNACK packet from non tacked host %s" % dst
 
         # Client response
         if (not (tcp.flags & SYN)) and (tcp.flags & ACK):
             src = ip_to_str(ip.src)
             if src in timing:
                 # Reconstruct initial seq number
-                if tcp.seq - 1 in timing[src]:
-                    timing[src][tcp.seq - 1].append((ip,ts))
+                if (tcp.seq - 1) in timing[src]:
+                    conn = timing[src][tcp.seq - 1]
+                    conn.ack_sent = ts
+                    timing[src][tcp.seq - 1] = conn
+
+        # RST packets
+        if tcp.flags & RST:
+            dst = ip_to_str(ip.dst)
+            if dst in timing:
+                print "[Log:] Host %s received a RST packet from the server" % dst
+            else:
+                print "[WARNING:] Received RST packet from non tacked host %s" % dst
 
 
     connection_time = {}
     retransmission_count = {}
+    dropped_count = {}
     num_connections = 0
     # Compute connection time (time between first SYN and first ACK)
     # Number of unanswered SYN (count retransmissions)
     for host in timing.iterkeys():
+        # do this to reduce lookup time
+        connection_time[host] = []
+        retransmission_count[host] = 0
+        dropped_count[host] = []
         for seq in timing[host].iterkeys():
-            data = timing[host][seq]
-            syn_time = 0
-            syn_ack_time = 0
-            ack_time = 0
-            if len(data) == 4:
-                for entry,ts in data:
-                    ip = entry
-                    tcp = ip.data
-                    if tcp.flags & SYN and not (tcp.flags & ACK):
-                        # ###### Count the number of SYN retransmissions
-                        if syn_time > 0:
-                            # More than one SYN
-                            if host not in retransmission_count:
-                                retransmission_count[host] = 0
-                            retransmission_count[host] = retransmission_count[host] + 1
-                        else:
-                            syn_time = ts
-                    if tcp.flags & SYN and (tcp.flags & ACK):
-                        syn_ack_time = ts
-                    if not (tcp.flags & SYN) and (tcp.flags & ACK) and ack_time == 0:
-                        ack_time = ts
+            conn = timing[host][seq]
+            if conn.IsRetransmitted():
+                retransmission_count[host] = retransmission_count[host] + conn.GetNumberOfRetransmissions()
+
+                # count retransmission in completed connections.
+                if conn.ack_sent > 0:
+                    connection_time[host].append (conn.ack_sent - conn.syn_sent)
+
+            elif conn.IsDroppedByServer():
+                dropped_count[host].append(conn.rst_received)
             else:
-                print ("[ERROR]: len(data) = " + str(len(data)))
-                continue
+                # normal connection completion
+                if conn.ack_sent > 0:
+                    connection_time[host].append(conn.ack_sent - conn.syn_sent)
+                else:
+                    print "[WARNING:] Found an incomplete solution at time %d" %conn.syn_sent
 
-            if host not in connection_time:
-                connection_time[host] = []
-            if ack_time > 0:
-                connection_time[host].append(ack_time - syn_time)
-            num_connections += 1
+            num_connections = num_connections + 1
 
+        print "Statistics for host %s" %host
+        print "Total number of completed connections: \t", len(connection_time[host])
+        print "Total number of retransmissions:       \t", retransmission_count[host]
+        print "Total number of dropped packets:       \t", len(dropped_count[host])
+        
     print "Total number of connections parsed ", num_connections
-    return connection_time, retransmission_count
+    return connection_time, retransmission_count, dropped_count
 
 
 if __name__ == '__main__':

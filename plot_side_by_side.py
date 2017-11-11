@@ -40,7 +40,7 @@ if __name__ == '__main__':
     i = 0
     for f in files:
         print "Parsing ", f
-        conn, prt = an.parse_file(f)
+        conn, prt, drop = an.parse_file(f)
         lbl = labels[i]
         i += 1
         print ("Generating CDFs...")
