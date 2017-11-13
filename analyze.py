@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-from scapy.all import *
 import numpy as np
 import time
 import matplotlib.pyplot as plt
@@ -9,7 +8,16 @@ from matplotlib.backends.backend_pdf import PdfPages
 import dpkt
 import socket
 from connection import TCPConnection
+from datetime import datetime
 
+FIN = 0x01
+SYN = 0x02
+RST = 0x04
+PSH = 0x08
+ACK = 0x10
+URG = 0x20
+ECE = 0x40
+CWR = 0x80
 
 def ip_to_str(address):
     return socket.inet_ntop(socket.AF_INET, address)
@@ -80,16 +88,85 @@ def plot_histogram(_data, _num_bins, _outfile):
     plt.close()
 
 
-def parse_file(fname, ignore_retrans=False):
-    FIN = 0x01
-    SYN = 0x02
-    RST = 0x04
-    PSH = 0x08
-    ACK = 0x10
-    URG = 0x20
-    ECE = 0x40
-    CWR = 0x80
+def compute_throughput(fname, host, interval, switch):
+    start_time = time.time()
+    f = open(fname)
+    rcap = dpkt.pcap.Reader(f)
+    end_time = time.time()
+    print "Time to read pcap file " + str(end_time - start_time)
 
+    start_ts = 0.0
+    curr_bucket = 0
+    appbytes = np.array([0])
+    for ts, buf in rcap:
+        try:
+            eth = dpkt.ethernet.Ethernet(buf)
+        except:
+            continue
+
+        if not isinstance(eth.data, dpkt.ip.IP):
+            continue
+
+        ip = eth.data
+
+        if not isinstance(ip.data, dpkt.tcp.TCP):
+            continue
+
+        tcp = ip.data
+
+        # takes care of SYN and SYNACK
+        if tcp.flags & SYN:
+            continue
+
+        iptocheck = ip.dst
+        if (switch):
+            iptocheck = ip.src
+
+        if ip_to_str(iptocheck) != host:
+            continue
+
+        if start_ts == 0.0:
+            start_ts = ts
+
+        if (ts - start_ts) > interval:
+            skipped = int((ts - start_ts)) / interval
+            if skipped > 1:
+                filling = [0] * (skipped-1)
+                appbytes = np.append(appbytes, filling)
+            curr_bucket += skipped-1
+
+            appbytes = np.append(appbytes, len(tcp.data))
+            curr_bucket += 1
+
+            start_ts = start_ts + skipped*interval
+            assert (ts - start_ts < interval)
+        else:
+            appbytes[curr_bucket] += len(tcp.data)
+
+    return appbytes
+
+
+# From https://gist.github.com/vishalkuo/f4aec300cf6252ed28d3
+def removeOutliers(data, outlierConstant=1.5):
+    a = np.array(data)
+    upper_quartile = np.percentile(a, 75)
+    lower_quartile = np.percentile(a, 25)
+    IQR = (upper_quartile - lower_quartile) * outlierConstant
+    quartileSet = (lower_quartile - IQR, upper_quartile + IQR)
+    resultList = []
+
+    num_outliers = 0
+    for y in a.tolist():
+        if (y >= quartileSet[0]) and (y <= quartileSet[1]):
+            resultList.append(y)
+        else:
+            num_outliers += 1
+
+    print "Remove %d outliers from dataset..." % num_outliers
+    return np.array(resultList)
+
+
+def parse_file(fname, ignore_retrans=False):
     start_time = time.time()
     f = open(fname)
     pz_cap = dpkt.pcap.Reader(f)
@@ -211,17 +288,21 @@ def parse_file(fname, ignore_retrans=False):
                 if conn.ack_sent > 0:
                     connection_time[host].append(conn.ack_sent - conn.syn_sent)
                 else:
-                    print "[WARNING:] Found an incomplete solution at time %d" %conn.syn_sent
+                    print "[WARNING:] Found an incomplete connection at time %d" % conn.syn_sent
 
             num_connections = num_connections + 1
 
         print "+----------------------------------------------------+"
-        print "Statistics for host %s" %host
+        print "Statistics for host %s" % host
         print "Total number of attempted connections: \t", len(timing[host])
         print "Total number of completed connections: \t", len(connection_time[host])
         print "Total number of retransmissions:       \t", retransmission_count[host]
         print "Total number of dropped connections:   \t", len(dropped_count[host])
         print "Total number of incomplete connections:\t", incomplete_connections[host]
+
+        print "Maximum connection time:               \t", np.max(connection_time[host])
+        print "Minimum connection time:               \t", np.min(connection_time[host])
+        print "Standard deviation:                    \t", np.std(connection_time[host])
         print "+----------------------------------------------------+"
         
     # print "Total number of connections parsed ", num_connections
@@ -242,6 +323,7 @@ if __name__ == '__main__':
         data = connection_time[host]
         fname = outfile + '-' + host + '.pdf'
 
+        data = removeOutliers(data,2.0)
         if do_cdf:
             plot_cdf(data, num_bins, fname, args.logx)
         else:
