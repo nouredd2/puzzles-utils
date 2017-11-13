@@ -2,14 +2,14 @@ import numpy as np
 
 
 class TCPConnection:
-    def __init__(self, host, seq, ts):
+    def __init__(self, host, seq, ts, sport):
         self.host = host
         self.syn_sent = ts  # time of first sent syn
         self.synack_received = 0
         self.ack_sent = 0
         self.rst_received = 0
         self.seq = seq
-        self.sport = 0
+        self.sport = sport
         self.isDroppedByDst = False
         self.syn_retransmissions = np.empty(0)
         self.isRetransmitted = False

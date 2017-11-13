@@ -107,3 +107,5 @@ ENV/
 capfiles
 tarfiles/
 results/
+*.tar.gz
+.DS_Store
