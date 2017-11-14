@@ -109,3 +109,4 @@ tarfiles/
 results/
 *.tar.gz
 .DS_Store
+*.conf

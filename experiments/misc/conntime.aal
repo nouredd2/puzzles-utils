@@ -33,7 +33,7 @@ eventstreams:
     - type: event
       agent: challenge_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 1 8" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 5 4" }
 
     - type: event
       agent: challenge_agent
