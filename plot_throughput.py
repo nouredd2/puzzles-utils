@@ -5,7 +5,8 @@ import argparse
 from matplotlib.backends.backend_pdf import PdfPages
 from analyze import compute_throughput
 import numpy as np
-
+from read_conf import ReadHosts
+import sys
 
 def prepare_arguments ():
     parser = argparse.ArgumentParser(description="Analyze and dump plots side by side.")
@@ -16,7 +17,7 @@ def prepare_arguments ():
     parser.add_argument('--interval', '-i', type=int, default=1.0,
                         help='The intervals in s')
     parser.add_argument('--hosts', '-n', type=str, required=True, nargs='+',
-                        help='The host for which to plot the throughput for')
+                        help='The host for which to plot the throughput for [Format: Hostname:iface]')
     parser.add_argument('--labels', '-l', type=str, nargs='*',
                         help='The labels for each plot.')
     parser.add_argument('--switch', '-s', action='store_true',
@@ -32,9 +33,18 @@ if __name__ == '__main__':
     fname = args.file
     outfile = args.outfile + '.pdf'
     interval_s = args.interval
-    hosts = args.hosts
+    hostnames = args.hosts
     labels = args.labels
     switch = args.switch
+
+    hostToIp = ReadHosts()
+
+    hosts = np.array([])
+    for host in hostnames:
+        if host not in hostToIp:
+            print "Hostname %s not found in file experiment.conf" % host
+            sys.exit()
+        hosts = np.append(hosts, hostToIp[host])
 
     fig, ax = plt.subplots(figsize=(8, 4))
 
@@ -46,6 +56,7 @@ if __name__ == '__main__':
     assert (len(hosts) == len(fname))
 
     i = 0
+    max_value = 0
     for f in fname:
         host = hosts[i]
         print "Computing throughput for host %s" % host
@@ -53,15 +64,17 @@ if __name__ == '__main__':
         numBuckets = np.size(throughput)
         buckets = np.arange(0, numBuckets*interval_s, interval_s)
 
-        bps = throughput / interval_s
+        bps = 10e-6 * throughput*8 / interval_s
+        max_value = np.maximum(max_value, np.max(bps))
         ax.plot(buckets, bps, label=labels[i])
         i += 1
 
+    ax.set_ylim(0,max_value+2)
     ax.grid(True)
     ax.legend(loc='best')
     ax.set_title('Throughput of host %s' % host)
     ax.set_xlabel('Time (s)')
-    ax.set_ylabel('Throughput (bps)')
+    ax.set_ylabel('Throughput (Mbps)')
 
     with PdfPages(outfile) as pdf:
         pdf.savefig(fig)

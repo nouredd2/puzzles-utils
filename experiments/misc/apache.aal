@@ -1,0 +1,37 @@
+
+groups:
+  server_group: &slist [servernode-1]
+
+agents:
+  server_agent:
+    group: server_group
+    path: /share/magi/modules/apache/apache.tar.gz 
+    execargs: []
+
+## The mapping from the AAL procedure to the experiment apparatus 
+
+streamstarts: [ serverstream ]
+
+eventstreams:
+  serverstream: 
+    - type: event
+      agent: server_agent 
+      method: startServer
+      trigger: serverStarted 
+      args: {}
+
+    - type: trigger
+      triggers: [ { timeout: 300000 } ] 
+
+    - type: event
+      agent: server_agent 
+      method: stopServer 
+      trigger: serverStopped 
+      args: {} 
+
+  cleanupstream:
+      - type: trigger
+        triggers: [ {event: serverStopped, target: exit} ] 
+
+################################################
+

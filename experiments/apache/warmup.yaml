@@ -1,0 +1,122 @@
+groups:
+  client_group: [clientnode-1, clientnode-2, clientnode-3, clientnode-4, clientnode-5, clientnode-6,
+                 clientnode-7, clientnode-8, clientnode-9, clientnode-10, clientnode-11, clientnode-12,
+                 clientnode-13, clientnode-14, clientnode-15]
+  server_group: &slist [servernode]
+
+agents:
+  client_agent:
+    group: client_group
+    path: /share/magi/modules/http_client/http_client.tar.gz
+    execargs: {servers: *slist, interval: '0.0625', sizes: '10000'}
+
+  server_agent:
+    group: server_group
+    path: /share/magi/modules/apache/apache.tar.gz 
+    execargs: []
+
+  dump_agent:
+    group: client_group
+    path: /share/magi/modules/tcpdump/tcpdump.tar.gz
+    execargs: []
+
+  log_agent:
+    group: server_group
+    path: /share/magi/modules/tcpdump/tcpdump.tar.gz
+    execargs: []
+
+## The mapping from the AAL procedure to the experiment apparatus 
+
+streamstarts: [ serverstream, clientstream, monitor ]
+
+eventstreams:
+  monitor:
+    - type: event
+      agent: dump_agent 
+      method: startCollection
+      args: { destination: "servernode", expression: "" }
+
+    - type: event
+      agent: log_agent
+      method: startCollection
+      args: { destination: "clientnode-1", expression: "" }
+  
+    - type: trigger
+      triggers: [ { event: serverStopped } ] 
+
+    - type: trigger
+      triggers: [ { timeout: 1000 } ]
+ 
+    - type: event
+      agent: dump_agent
+      method: stopCollection
+      trigger: dumpStopped 
+      args: {}
+  
+    - type: trigger
+      triggers: [ {event: dumpStopped} ]
+
+    - type: event
+      agent: log_agent
+      method: stopCollection
+      trigger: serverdumpStop
+      args: {}
+
+    - type: trigger
+      triggers: [ {event: serverdumpStop} ]
+
+    - type: event
+      agent: log_agent
+      method: archiveDump
+      trigger: serverDumped
+      args: { archivepath: /proj/ILLpuzzle/results/ }
+
+    - type: trigger
+      triggers: [ {event: serverDumped} ]
+  
+    - type: event
+      agent: dump_agent
+      trigger: filesCopied
+      method: archiveDump
+      args: { archivepath: /proj/ILLpuzzle/results/ }
+
+  serverstream: 
+    - type: event
+      agent: server_agent 
+      method: startServer
+      trigger: serverStarted 
+      args: {}
+
+    - type: trigger
+      triggers: [ { event: clientStopped} ] 
+
+    - type: event
+      agent: server_agent 
+      method: stopServer 
+      trigger: serverStopped 
+      args: {} 
+
+  clientstream:      
+      - type: trigger
+        triggers: [ { event: serverStarted } ] 
+
+      - type: event
+        agent: client_agent 
+        method: startClient
+        args: {}
+
+      - type: trigger
+        triggers: [ { timeout: 300000 } ]
+
+      - type: event
+        agent: client_agent
+        method: stopClient
+        trigger: clientStopped 
+        args: {}
+
+  cleanupstream:
+      - type: trigger
+        triggers: [ {event: filesCopied, target: exit} ] 
+
+################################################
+

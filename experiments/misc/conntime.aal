@@ -1,0 +1,120 @@
+groups:
+  client_group: [clientnode-1]
+  server_group: &slist [servernode-1]
+  monitor_group: [clientnode-1]
+
+agents:
+  client_agent:
+    group: client_group
+    path: /share/magi/modules/http_client/http_client.tar.gz
+    execargs: {servers: *slist, interval: '0.0625', sizes: '1000'}
+
+  server_agent:
+    group: server_group
+    path: /share/magi/modules/apache/apache.tar.gz 
+    execargs: []
+
+  monitor_agent:
+    group: monitor_group
+    path: /share/magi/modules/tcpdump/tcpdump.tar.gz
+    execargs: []
+
+  challenge_agent:
+    group: server_group
+    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
+    execargs: []
+
+## The mapping from the AAL procedure to the experiment apparatus 
+
+streamstarts: [ serverstream, clientstream, monitor, challenge ]
+
+eventstreams:
+  challenge:
+    - type: event
+      agent: challenge_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 1 8" }
+
+    - type: event
+      agent: challenge_agent
+      method: start
+      args: {}
+
+    - type: event
+      agent: challenge_agent
+      method: stop
+      trigger: SetChallengeComplete
+      args: {}
+
+  monitor:
+    - type: event
+      agent: monitor_agent 
+      method: startCollection
+      args: { destination: "servernode-1", expression: "", tcpdump_args: "-U" }
+  
+    - type: trigger
+      triggers: [ { event: serverStopped } ] 
+
+    - type: trigger
+      triggers: [ { timeout: 1000 } ]
+ 
+    - type: event
+      agent: monitor_agent
+      method: stopCollection
+      trigger: dumpStopped 
+      args: {}
+  
+    - type: trigger
+      triggers: [ {event: dumpStopped} ]
+  
+    - type: event
+      agent: monitor_agent
+      trigger: filesCopied
+      method: archiveDump
+      args: { archivepath: /proj/ILLpuzzle/ }
+
+  serverstream: 
+    - type: trigger
+      triggers: [ { event: SetChallengeComplete } ]
+
+    - type: event
+      agent: server_agent 
+      method: startServer
+      trigger: serverStarted 
+      args: {}
+
+    - type: trigger
+      triggers: [ { event: clientStopped} ] 
+
+    - type: event
+      agent: server_agent 
+      method: stopServer 
+      trigger: serverStopped 
+      args: {} 
+
+  clientstream:      
+      - type: trigger
+        triggers: [ { event: serverStarted } ] 
+
+      - type: event
+        agent: client_agent 
+        method: startClient
+        args: {}
+
+      - type: trigger
+        triggers: [ { timeout: 300000 } ]
+
+
+      - type: event
+        agent: client_agent
+        method: stopClient
+        trigger: clientStopped 
+        args: {}
+      
+
+  cleanupstream:
+      - type: trigger
+        triggers: [ {event: filesCopied, target: exit} ] 
+
+################################################
+

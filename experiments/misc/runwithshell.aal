@@ -1,0 +1,118 @@
+## The agent implementation and addressing information 
+groups:
+  client_group: [clientnode-1, clientnode-2]
+  attack_group: [attacknode-1]
+  monitor_group: [router]
+  server_group: &slist [servernode-1]
+
+agents:
+  client_agent:
+    group: client_group
+    path: /share/magi/modules/http_client/http_client.tar.gz
+    execargs: {servers: *slist, interval: '5', sizes: 'minmax(1000,10000)'}
+
+  server_agent:
+    group: server_group
+    path: /share/magi/modules/apache/apache.tar.gz 
+    execargs: []
+
+  monitor_agent:
+    group: monitor_group
+    path: /share/magi/modules/tcpdump/tcpdump.tar.gz
+    execargs: []
+
+  flooder_agent:
+    group: attack_group
+    path: /share/magi/modules/runshell/runshell.tar.gz
+    execargs: {'path': '/proj/ILLpuzzle/scripts/run_hping3.sh'}
+
+
+## The mapping from the AAL procedure to the experiment apparatus 
+
+streamstarts: [ monitor, serverstream, clientstream, cleanupstream, flooder ]
+
+eventstreams:
+  flooder:
+    - type: trigger
+      triggers: [ { timeout: 5000 } ]
+
+    - type: event
+      agent: flooder_agent
+      method: execute
+      trigger: executeDone
+      args: {}
+
+    - type: trigger
+      triggers: [ { event: serverStopped } ]
+
+    - type: trigger
+      triggers: [ {event: serverStopped, agent: flooder_agent, target: exit} ]
+
+  monitor:
+    - type: event
+      agent: monitor_agent 
+      method: startCollection
+      args: { expression: '', tcpdump_args: '-i eth1' }
+  
+    - type: trigger
+      triggers: [ { event: serverStopped } ] 
+  
+    - type: event
+      agent: monitor_agent
+      method: stopCollection
+      trigger: dumpStopped 
+      args: {}
+  
+    - type: trigger
+      triggers: [{event: dumpStopped}] 
+  
+    - type: event
+      agent: monitor_agent
+      trigger: filesCopied
+      method: archiveDump
+      args: { archivepath: /proj/ILLpuzzle/ }
+  
+    - type: trigger
+      triggers: [ {event: filesCopied} ] 
+  serverstream: 
+      - type: event
+        agent: server_agent 
+        method: startServer
+        trigger: serverStarted 
+        args: {}
+
+      - type: trigger
+        triggers: [ { event: clientStopped} ] 
+
+      - type: event
+        agent: server_agent 
+        method: stopServer 
+        trigger: serverStopped 
+        args: {} 
+
+  clientstream:      
+      - type: trigger
+        triggers: [ { event: serverStarted } ] 
+
+      - type: event
+        agent: client_agent 
+        method: startClient
+        args: {}
+
+      - type: trigger
+        triggers: [ { timeout: 30000 } ]
+
+
+      - type: event
+        agent: client_agent
+        method: stopClient
+        trigger: clientStopped 
+        args: {}
+      
+
+  cleanupstream:
+      - type: trigger
+        triggers: [ {event: filesCopied, target: exit} ] 
+
+################################################
+
