@@ -15,7 +15,7 @@ def prepare_arguments ():
                         help="The output file to save to.")
     parser.add_argument('--interval', '-i', type=int, default=1.0,
                         help='The intervals in s')
-    parser.add_argument('--hosts', type=str, required=True, nargs='+',
+    parser.add_argument('--hosts', '-n', type=str, required=True, nargs='+',
                         help='The host for which to plot the throughput for')
     parser.add_argument('--labels', '-l', type=str, nargs='*',
                         help='The labels for each plot.')
@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     args = prepare_arguments()
     fname = args.file
-    outfile = args.outfile
+    outfile = args.outfile + '.pdf'
     interval_s = args.interval
     hosts = args.hosts
     labels = args.labels
@@ -42,7 +42,7 @@ if __name__ == '__main__':
         labels = hosts
 
     if len(hosts) == 1 and len(fname) > 1:
-        hosts = [hosts]*len(fname)
+        hosts = hosts*len(fname)
     assert (len(hosts) == len(fname))
 
     i = 0

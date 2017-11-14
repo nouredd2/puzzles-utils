@@ -8,7 +8,6 @@ from matplotlib.backends.backend_pdf import PdfPages
 import dpkt
 import socket
 from connection import TCPConnection
-from datetime import datetime
 
 FIN = 0x01
 SYN = 0x02
