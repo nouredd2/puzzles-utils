@@ -73,8 +73,8 @@ set lanA2 [$ns make-lan "router3 $alanstr2" 100Mb 0ms]
 
 set lanS [$ns make-lan "router2 $slanstr" 1000Mb 0ms]
 
-set duplex-link $router1 $router2 100Mb 0ms DropTail
-set duplex-link $router2 $router3 100Mb 0ms DropTail
+set link1 [$ns duplex-link $router1 $router2 100Mb 0ms DropTail]
+set link2 [$ns duplex-link $router2 $router3 100Mb 0ms DropTail]
 
 $ns rtproto Static
 $ns run 
