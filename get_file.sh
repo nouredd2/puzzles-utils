@@ -1,3 +1,3 @@
 #!/bin/sh
 
-scp deter:/proj/ILLpuzzle/results/$1 .
+rsync -avP -e ssh deter:/proj/ILLpuzzle/results/$1 .
