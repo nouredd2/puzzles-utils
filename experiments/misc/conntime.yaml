@@ -1,27 +1,32 @@
 groups:
-  client_group: [clientnode-1]
-  server_group: &slist [servernode-1]
-  monitor_group: [clientnode-1]
+  client_group: [clientnode-1, clientnode-2, clientnode-3, clientnode-4, clientnode-5, clientnode-6,
+                 clientnode-7, clientnode-8, clientnode-9, clientnode-10]
+  server_group: &slist [servernode]
 
 agents:
-  client_agent:
+  benign_agent:
     group: client_group
     path: /share/magi/modules/http_client/http_client.tar.gz
-    execargs: {servers: *slist, interval: '0.0625', sizes: '1000'}
+    execargs: {servers: *slist, interval: '0.0625', sizes: '10000'}
 
   server_agent:
     group: server_group
     path: /share/magi/modules/apache/apache.tar.gz 
     execargs: []
 
-  monitor_agent:
-    group: monitor_group
+  dump_agent:
+    group: client_group
     path: /share/magi/modules/tcpdump/tcpdump.tar.gz
     execargs: []
 
   challenge_agent:
     group: server_group
     path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
+    execargs: []
+
+  log_agent:
+    group: server_group
+    path: /share/magi/modules/tcpdump/tcpdump.tar.gz
     execargs: []
 
 ## The mapping from the AAL procedure to the experiment apparatus 
@@ -33,7 +38,7 @@ eventstreams:
     - type: event
       agent: challenge_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 5 4" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 5 20" }
 
     - type: event
       agent: challenge_agent
@@ -47,10 +52,18 @@ eventstreams:
       args: {}
 
   monitor:
+    - type: trigger
+      triggers: [ { event: serverStarted } ]
+
     - type: event
-      agent: monitor_agent 
+      agent: dump_agent 
       method: startCollection
-      args: { destination: "servernode-1", expression: "", tcpdump_args: "-U" }
+      args: { destination: "servernode", expression: "" }
+
+    - type: event
+      agent: log_agent
+      method: startCollection
+      args: { destination: "clientnode-1", expression: "" }
   
     - type: trigger
       triggers: [ { event: serverStopped } ] 
@@ -59,19 +72,37 @@ eventstreams:
       triggers: [ { timeout: 1000 } ]
  
     - type: event
-      agent: monitor_agent
+      agent: dump_agent
       method: stopCollection
       trigger: dumpStopped 
       args: {}
   
     - type: trigger
       triggers: [ {event: dumpStopped} ]
+
+    - type: event
+      agent: log_agent
+      method: stopCollection
+      trigger: serverdumpStop
+      args: {}
+
+    - type: trigger
+      triggers: [ {event: serverdumpStop} ]
+
+    - type: event
+      agent: log_agent
+      method: archiveDump
+      trigger: serverDumped
+      args: { archivepath: /proj/ILLpuzzle/results/ }
+
+    - type: trigger
+      triggers: [ {event: serverDumped} ]
   
     - type: event
-      agent: monitor_agent
+      agent: dump_agent
       trigger: filesCopied
       method: archiveDump
-      args: { archivepath: /proj/ILLpuzzle/ }
+      args: { archivepath: /proj/ILLpuzzle/results/ }
 
   serverstream: 
     - type: trigger
@@ -97,16 +128,15 @@ eventstreams:
         triggers: [ { event: serverStarted } ] 
 
       - type: event
-        agent: client_agent 
+        agent: benign_agent 
         method: startClient
         args: {}
 
       - type: trigger
-        triggers: [ { timeout: 300000 } ]
-
+        triggers: [ { timeout: 120000 } ]
 
       - type: event
-        agent: client_agent
+        agent: benign_agent
         method: stopClient
         trigger: clientStopped 
         args: {}
