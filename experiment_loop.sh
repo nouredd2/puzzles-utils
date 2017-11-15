@@ -8,7 +8,7 @@ ARCHIVE=$2
 
 if [ -z "$1" ]
   then
-  echo "[Usage:] ./run_experiment event_file [archive name]"
+  echo "[Usage:] ./experiment_loop.sh event_file [archive name]"
   exit 0
 fi
 
