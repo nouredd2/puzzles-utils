@@ -38,7 +38,7 @@ do
     /share/magi/current/magi_orchestrator.py --experiment $EXP --project $PROJ --events $AAL
     sleep 10
     cd ~/proj/results
-    tar -czvf results$2_k_${k}_d_{$d}.tar.gz *.cap
+    tar -czvf results$2_k_${k}_d_${d}.tar.gz *.cap
     rm -f ~/proj/results/*.cap
     cd
     set +x
