@@ -27,3 +27,10 @@ class TCPConnection:
 
     def GetNumberOfRetransmissions(self):
         return np.size(self.syn_retransmissions)
+
+
+class ThroughputEntry:
+    def __init__(self, ts):
+        self.inbytes = np.array([0])
+        self.curr_bucket = 0
+        self.start_ts = ts

@@ -7,7 +7,7 @@ import argparse
 from matplotlib.backends.backend_pdf import PdfPages
 import dpkt
 import socket
-from connection import TCPConnection
+from connection import TCPConnection, ThroughputEntry
 
 FIN = 0x01
 SYN = 0x02
@@ -18,27 +18,9 @@ URG = 0x20
 ECE = 0x40
 CWR = 0x80
 
+
 def ip_to_str(address):
     return socket.inet_ntop(socket.AF_INET, address)
-
-
-def set_up_arguments():
-    parser = argparse.ArgumentParser(description="Analyze and dump plots.")
-    parser.add_argument('--file', '-f', type=str, required=True,
-                        help="The input pcap file")
-    parser.add_argument('--out', '-o', type=str, required=True,
-                        help="The out pdf file")
-    parser.add_argument('--bins', '-b', type=int, default=50,
-                        help="The number of bins to use for the histogram")
-    parser.add_argument('--cdf', action='store_true',
-                        help="Toggle plotting cdf vs histogram (default is histogram)")
-    parser.add_argument('--logx', '-l', action='store_true',
-                        help="Toggle plotting with log scale on x-axis")
-    parser.add_argument('--ignore_retrans', '-i', action='store_true',
-                        help="Ignore retransmissions when computing connection times.")
-    _args = parser.parse_args()
-
-    return _args
 
 
 def plot_cdf_ax(_data, _num_bins, _ax, lbl, logx):
@@ -143,6 +125,86 @@ def compute_throughput(fname, host, interval, switch):
             appbytes[curr_bucket] += len(tcp.data)
 
     return appbytes
+
+
+def handle_ip(ip_addr, throughput, ts, tcp, interval):
+    if ip_addr not in throughput:
+        # create empty entry for this ip
+        entry = ThroughputEntry(ts)
+        throughput[ip_addr] = entry
+    else:
+        entry = throughput[ip_addr]
+
+    start_ts = entry.start_ts
+    curr_bucket = entry.curr_bucket
+    inbytes = entry.inbytes
+
+    if (ts - start_ts) > interval:
+        skipped = int((ts - start_ts)) / interval
+        if skipped > 1:
+            filling = [0] * (skipped - 1)
+            inbytes = np.append(inbytes, filling)
+        curr_bucket += skipped - 1
+
+        inbytes = np.append(inbytes, len(tcp.data))
+        curr_bucket += 1
+
+        start_ts = start_ts + skipped * interval
+        assert (ts - start_ts < interval)
+    else:
+        inbytes[curr_bucket] += len(tcp.data)
+
+    # update entry values
+    entry.start_ts = start_ts
+    entry.curr_bucket = curr_bucket
+    entry.inbytes = inbytes
+
+
+def compute_global_throughput(pcapFile, interval, server_ip=None):
+    start_time = time.time()
+    f = open(pcapFile)
+    rcap = dpkt.pcap.Reader(f)
+    end_time = time.time()
+    print "Time to read pcap file " + str(end_time - start_time)
+
+    # each entry should have curr_bucket, start_ts, and appbytes
+    throughput = {}
+    for ts, buf in rcap:
+        try:
+            eth = dpkt.ethernet.Ethernet(buf)
+        except:
+            continue
+
+        if not isinstance(eth.data, dpkt.ip.IP):
+            continue
+
+        ip = eth.data
+
+        if not isinstance(ip.data, dpkt.tcp.TCP):
+            continue
+
+        tcp = ip.data
+
+        # takes care of SYN and SYNACK
+        if tcp.flags & SYN:
+            continue
+
+        # take care of FIN
+        if tcp.flags & FIN:
+            continue
+
+        src_ip = ip_to_str(ip.src)
+        dst_ip = ip_to_str(ip.dst)
+
+        # handle the client first
+        handle_ip(dst_ip, throughput, ts, tcp, interval)
+
+        # now also take care of the server
+        if src_ip != server_ip:
+            continue
+        handle_ip(src_ip, throughput, ts, tcp, interval)
+
+    return throughput
 
 
 # From https://gist.github.com/vishalkuo/f4aec300cf6252ed28d3
@@ -306,6 +368,25 @@ def parse_file(fname, ignore_retrans=False):
         
     # print "Total number of connections parsed ", num_connections
     return connection_time, retransmission_count, dropped_count, incomplete_connections
+
+
+def set_up_arguments():
+    parser = argparse.ArgumentParser(description="Analyze and dump plots.")
+    parser.add_argument('--file', '-f', type=str, required=True,
+                        help="The input pcap file")
+    parser.add_argument('--out', '-o', type=str, required=True,
+                        help="The out pdf file")
+    parser.add_argument('--bins', '-b', type=int, default=50,
+                        help="The number of bins to use for the histogram")
+    parser.add_argument('--cdf', action='store_true',
+                        help="Toggle plotting cdf vs histogram (default is histogram)")
+    parser.add_argument('--logx', '-l', action='store_true',
+                        help="Toggle plotting with log scale on x-axis")
+    parser.add_argument('--ignore_retrans', '-i', action='store_true',
+                        help="Ignore retransmissions when computing connection times.")
+    _args = parser.parse_args()
+
+    return _args
 
 
 if __name__ == '__main__':

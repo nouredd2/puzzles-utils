@@ -10,8 +10,12 @@ def ReadHosts():
     content = [x.strip() for x in content]
 
     hostToIp = {}
+    ipToHost = {}
     for line in content:
         values = line.split()
-        hostToIp[values[0]] = values[1]
 
-    return hostToIp
+        hostname = values[0].split(':')[0]
+        hostToIp[hostname] = values[1]
+        ipToHost[values[1]] = hostname
+
+    return hostToIp, ipToHost

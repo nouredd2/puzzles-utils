@@ -8,6 +8,7 @@ import numpy as np
 from read_conf import ReadHosts
 import sys
 
+
 def prepare_arguments ():
     parser = argparse.ArgumentParser(description="Analyze and dump plots side by side.")
     parser.add_argument('--file', '-f', type=str, required=True, nargs='+',
@@ -37,7 +38,7 @@ if __name__ == '__main__':
     labels = args.labels
     switch = args.switch
 
-    hostToIp = ReadHosts()
+    hostToIp, ipToHost = ReadHosts()
 
     hosts = np.array([])
     for host in hostnames:
