@@ -279,9 +279,9 @@ def parse_file(fname, ignore_retrans=False):
             if dst in timing:  # if we do not have a SYN we ignore it
                 if (tcp.ack - 1) in timing[dst]:
                     # print pkt[TCP].seq, pkt[TCP].ack
-                    conn = timing[src][tcp.ack-1]
+                    conn = timing[dst][tcp.ack-1]
                     conn.synack_received = ts
-                    timing[src][tcp.ack-1] = conn
+                    timing[dst][tcp.ack-1] = conn
             else:
                 print "[WARNING:] Received SYNACK packet for non tracked host %s" % dst
                 print "           Packet at received at time %lf" % ts
