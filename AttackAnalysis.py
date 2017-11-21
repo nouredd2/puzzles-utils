@@ -74,8 +74,8 @@ def populate_connections(pz_cap, verbose=False):
                     conn.synack_received = ts
                     timing[dst][tcp.ack-1] = conn
             else:
-                print "[WARNING:] Received SYNACK packet for non tracked host %s" % dst
-                print "           Packet at received at time %lf" % ts
+                ANPrint("[WARNING:] Received SYNACK packet for non tracked host %s" % dst, verbose)
+                ANPrint("           Packet at received at time %lf" % ts, verbose)
 
         # Client response
         if (not (tcp.flags & SYN)) and (tcp.flags & ACK):
