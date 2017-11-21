@@ -25,7 +25,7 @@ def ANPrint(message, verbose):
         print message
 
 
-def populate_connections(pz_cap):
+def populate_connections(pz_cap, verbose=False):
     timing = {}
     for ts, buf in pz_cap:
         try:
@@ -102,10 +102,10 @@ def populate_connections(pz_cap):
                         reused = reused + 1
 
                 if reused > 1:
-                    print "[WARNING:] Port %d have been reused. Results cannot be trusted!" % port
+                    ANPrint("[WARNING:] Port %d have been reused. Results cannot be trusted!" % port, verbose)
 
             else:
-                print "[WARNING:] Received RST packet for non tracked host %s" % dst
+                ANPrint("[WARNING:] Received RST packet for non tracked host %s" % dst, verbose)
 
     return timing
 
@@ -125,7 +125,7 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False):
     end_time = time.time()
     ANPrint("Time to read pcap file " + str(end_time - start_time), verbose)
 
-    timing = populate_connections(rcap)
+    timing = populate_connections(rcap, verbose)
 
     attack_rates = {}
     for host, conn_dict in timing:
