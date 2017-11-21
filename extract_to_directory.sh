@@ -5,9 +5,13 @@ alias untar='tar -xzvf'
 
 for i in `find . -maxdepth 1 -name "$PREFIX*.tar.gz"`
 do
-  set -x
   DIRECTORY=`basename $i .tar.gz`
-  mkdir -p ./$DIRECTORY
-  untar $i --directory ./$DIRECTORY
-  set +x
+  if [ ! -d "$DIRECTORY" ]; then
+	  mkdir -p ./$DIRECTORY
+	  set -x
+	  untar $i --directory ./$DIRECTORY
+	  set +x
+  else
+	  echo "Skipping director $DIRECTORY"
+  fi
 done

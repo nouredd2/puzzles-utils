@@ -160,6 +160,43 @@ def handle_ip(ip_addr, throughput, ts, tcp, interval):
     entry.inbytes = inbytes
 
 
+def compute_tcp_opt_count(pcapFile, client):
+    start_time = time.time()
+    f = open(pcapFile)
+    rcap = dpkt.pcap.Reader(f)
+    end_time = time.time()
+    print "Time to read pcap file " + str(end_time - start_time)
+
+    # each entry should have curr_bucket, start_ts, and appbytes
+    entry = {}
+    for ts, buf in rcap:
+        try:
+            eth = dpkt.ethernet.Ethernet(buf)
+        except:
+            continue
+
+        if not isinstance(eth.data, dpkt.ip.IP):
+            continue
+
+        ip = eth.data
+
+        if not isinstance(ip.data, dpkt.tcp.TCP):
+            continue
+
+        tcp = ip.data
+
+        src_ip = ip_to_str(ip.src)
+        dst_ip = ip_to_str(ip.dst)
+
+        # takes care of SYN and SYNACK
+        if tcp.flags & SYN and tcp.flags & ACK:
+            if dst_ip == client:
+                option_list = dpkt.tcp.parse_opts ( tcp.opts )
+                entry[ts]=len(option_list)
+
+    return entry
+
+
 def compute_global_throughput(pcapFile, interval, server_ip=None):
     start_time = time.time()
     f = open(pcapFile)
