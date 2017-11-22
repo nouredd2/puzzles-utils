@@ -59,7 +59,6 @@ class ACKFlooder:
             opt_str += encoded
 
         opt_entry = (253, opt_str)
-        print opt_entry
         options.append(opt_entry)
         ack = TCP(dport=self.dport, flags="A",
                   seq=sequence_number + 1, ack=ack_number, options=options)
@@ -75,7 +74,7 @@ class ACKFlooder:
         start_time = 0
         sport = 0
         seq = np.random.randint(low=0, high=np.iinfo(np.int32).max)
-        while self.num_sent_packets <= maxPackets:
+        while self.num_sent_packets < maxPackets:
             ip = IP(dst=self.destination)
 
             # refresh the sequence number and the timestamps every interval
@@ -101,6 +100,9 @@ class ACKFlooder:
             self.sendPacket(ip, seq, ack_num)
             self.num_sent_packets += 1
             self.curr_time = time.time()
+
+            if self.sending_rate != 0:
+                time.sleep(1.0 / self.sending_rate)
 
 
 if __name__ == '__main__':
