@@ -8,13 +8,19 @@ ARCHIVE=$2
 
 if [ -z "$1" ]
   then
-  echo "[Usage:] ./run_experiment event_file [archive name]"
+  echo "[Usage:] ./run_experiment event_file [archive name] [experiment name]"
   exit 0
 fi
 
 if [ -z "$ARCHIVE" ]
   then
   ARCHIVE=-$(date +"%Y-%m-%d-%M-%S")
+fi
+
+EXP=$3
+if [ -z "$3" ]
+  then
+  EXP=oak
 fi
 
 while true; do
@@ -31,4 +37,4 @@ set -x
 
 sleep 10 
 cd ~/proj/results/
-tar -czvf results$2.tar.gz *.cap
+tar -czvf results$ARCHIVE.tar.gz *.cap

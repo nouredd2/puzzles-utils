@@ -2,7 +2,7 @@
 
 AAL=$1
 PROJ=ILLpuzzle
-EXP=oak
+EXP=sc
 
 ARCHIVE=$2
 
@@ -15,6 +15,12 @@ fi
 if [ -z "$ARCHIVE" ]
   then
   ARCHIVE=-$(date +"%Y-%m-%d-%M-%S")
+fi
+
+EXP=$3
+if [ -z "$3" ]
+  then
+  EXP=oak
 fi
 
 while true; do
@@ -38,7 +44,7 @@ do
     /share/magi/current/magi_orchestrator.py --experiment $EXP --project $PROJ --events $AAL
     sleep 10
     cd ~/proj/results
-    tar -czvf results$2_k_${k}_d_${d}.tar.gz *.cap
+    tar -czvf results$ARCHIVE_k_${k}_d_${d}.tar.gz *.cap
     rm -f ~/proj/results/*.cap
     cd
     set +x
