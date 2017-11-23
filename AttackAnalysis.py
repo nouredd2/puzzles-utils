@@ -26,7 +26,7 @@ def ANPrint(message, verbose):
         print message
 
 
-def populate_connections(pz_cap, verbose=False):
+def populate_connections(pz_cap, verbose=False, target_ips=set()):
     timing = {}
     for ts, buf in pz_cap:
         try:
@@ -51,7 +51,10 @@ def populate_connections(pz_cap, verbose=False):
         if tcp.flags & SYN and not (tcp.flags & ACK):
             # pkt.display()
             src = ip_to_str(ip.src)
-            # handshake[seq] = {h: src, ack: 0, t1: pkt.time}
+
+            # check if I am applying some filter over the nodes
+            if len(target_ips) > 0 and src not in target_ips:
+                continue
 
             if src not in timing:
                 timing[src] = {}
@@ -68,6 +71,11 @@ def populate_connections(pz_cap, verbose=False):
         if tcp.flags & SYN and (tcp.flags & ACK):
             # handshake[ack - 1] = {ack:seq, t2: pkt.time }
             dst = ip_to_str(ip.dst)
+
+            # check if I am applying some filter over the nodes
+            if len(target_ips) > 0 and dst not in target_ips:
+                continue
+
             if dst in timing:  # if we do not have a SYN we ignore it
                 if (tcp.ack - 1) in timing[dst]:
                     # print pkt[TCP].seq, pkt[TCP].ack
@@ -81,6 +89,11 @@ def populate_connections(pz_cap, verbose=False):
         # Client response
         if (not (tcp.flags & SYN)) and (tcp.flags & ACK):
             src = ip_to_str(ip.src)
+
+            # check if I am applying some filter over the nodes
+            if len(target_ips) > 0 and src not in target_ips:
+                continue
+
             if src in timing:
                 # Reconstruct initial seq number
                 if (tcp.seq - 1) in timing[src]:
@@ -91,6 +104,11 @@ def populate_connections(pz_cap, verbose=False):
         # RST packets
         if tcp.flags & RST:
             dst = ip_to_str(ip.dst)
+
+            # check if I am applying some filter over the nodes
+            if len(target_ips) > 0 and dst not in target_ips:
+                continue
+
             if dst in timing:
                 # print "[Log:] Host %s received a RST packet from the server" % dst
                 port = tcp.dport
@@ -118,7 +136,7 @@ def compute_sending_rate(pcap_file, interval_s, verbose=False):
 
     @pcap_file: The pcap file to parse
     @interval_s: The interval for which to compute the effective sending rate
-	@verbose: Flood out the printing if true
+    @verbose: Flood out the printing if true
 
     """
 
@@ -182,7 +200,7 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False):
 
     @pcap_file: The pcap file to parse
     @interval_s: The interval for which to compute the effective attack rate
-	@verbose: Flood out the printing if true
+    @verbose: Flood out the printing if true
 
     """
     start_time = time.time()
@@ -252,3 +270,126 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False):
         print "+----------------------------------------------------+"
 
     return attack_rates
+
+
+def compute_all_rates(pcap_file, interval_s, target_ips, verbose=0):
+    """
+    Compute all of the rates for all the attack nodes received over time by
+     the server.
+
+    @pcap_file: The name of the pcap files containing all packets
+    @interval_s: The sampling interval
+    @target_ips: The ip addresses of the attack nodes
+    @verbose: verbosity level, 0 for all off, 1 for statistics, 2 for everything
+
+    @return: Returns two dictionaries, one for the number of SYN packets sent
+                and another containing the number of connections established.
+
+    """
+    start_time = time.time()
+    f = open(pcap_file)
+    rcap = dpkt.pcap.Reader(f)
+    end_time = time.time()
+    ANPrint("Time to read pcap file " + str(end_time - start_time), verbose == 2)
+
+    timing = populate_connections(rcap, verbose == 2, target_ips)
+
+    syn_rates = {}
+    connection_rates = {}
+
+    start_time = time.time()
+    for host, conn_dict in timing.items():
+        num_attempted = len(conn_dict)
+        num_acked = 0
+        num_failed = 0
+        num_synacked = 0
+
+        # will have to handle things in two different loops because of the difference in
+        # timestamps between the sending of the SYN and the ACK packets
+        sending_rate = np.array([0])
+        sorted_items = sorted(conn_dict.values(), key=operator.attrgetter('syn_sent'))
+        start_ts = 0
+        curr_bucket = 0
+        for conn in sorted_items:
+            syn_sent = conn.syn_sent
+
+            # ack has been sent, check which bucket we're counting
+            if start_ts == 0:
+                start_ts = syn_sent
+
+            if (syn_sent - start_ts) > interval_s:
+                skipped = int((syn_sent - start_ts)) / interval_s
+                if skipped > 1:
+                    filling = [0] * (skipped - 1)
+                    sending_rate = np.append(sending_rate, filling)
+                curr_bucket += skipped - 1
+
+                sending_rate = np.append(sending_rate, 1)
+                curr_bucket += 1
+
+                start_ts = start_ts + skipped * interval_s
+                assert (syn_sent - start_ts < interval_s)
+            else:
+                sending_rate[curr_bucket] += 1
+
+        # now will have to do the establishment rate but do the sorting based on the ack_sent
+        # numbers (Actually from the server's end, it should be the ack_received)
+        establishment_rate = np.array([0])
+        sorted_items = sorted(conn_dict.values(), key=operator.attrgetter('ack_sent'))
+        start_ts = 0
+        curr_bucket = 0
+        for conn in sorted_items:
+            ack_sent = conn.ack_sent
+            synack_received = conn.synack_received
+
+            # check if the syn ack has been received
+            if synack_received > 0:
+                num_synacked += 1
+
+            # check if the ack has been sent
+            if ack_sent == 0:
+                num_failed += 1
+                continue
+
+            # count this as a completed connection, it is tricky though that
+            # we do not know for sure what happened here, did it reach the
+            # established state or did it have to timeout?
+            num_acked += 1
+
+            # ack has been sent, check which bucket we're counting
+            if start_ts == 0:
+                start_ts = ack_sent
+
+            if (ack_sent - start_ts) > interval_s:
+                skipped = int((ack_sent - start_ts)) / interval_s
+                if skipped > 1:
+                    filling = [0] * (skipped - 1)
+                    establishment_rate = np.append(establishment_rate, filling)
+                curr_bucket += skipped - 1
+
+                establishment_rate = np.append(establishment_rate, 1)
+                curr_bucket += 1
+
+                start_ts = start_ts + skipped * interval_s
+                assert (ack_sent - start_ts < interval_s)
+            else:
+                establishment_rate[curr_bucket] += 1
+
+        syn_rates[host] = sending_rate
+        connection_rates[host] = establishment_rate
+
+        if verbose == 1:
+            print "+----------------------------------------------------+"
+            print "Statistics for host %s" % host
+            print "Total number of attempted connections: \t", num_attempted
+            print "Total number of acked connections:     \t", num_acked
+            print "Total number of failed connections:    \t", num_failed
+            print "Total number of replies received:      \t", num_synacked
+            print "Average SYN rate seen by server:       \t", np.average(sending_rate) / interval_s
+            print "Average ACK rate seen by server:       \t", np.average(establishment_rate) / interval_s
+            print "+----------------------------------------------------+"
+
+    end_time = time.time()
+    ANPrint("Time to perform full analysis " + str(end_time - start_time), verbose == 1)
+
+    return syn_rates, connection_rates

@@ -64,7 +64,7 @@ class ACKFlooder:
         options.append(opt_entry)
         ack = TCP(dport=self.dport, flags="A",
                   seq=sequence_number + 1, ack=ack_number, options=options)
-        send(ip/ack)
+        send(ip/ack, verbose=False)
 
     def startSending(self, maxPackets=-1):
         """
@@ -102,6 +102,7 @@ class ACKFlooder:
                       self.tsecr = val[0]
 
                 start_time = time.time()
+                print "[Log:] Sent %d packets so far..." % self.num_sent_packets
 
             self.sendPacket(ip, seq, ack_num)
             self.num_sent_packets += 1
