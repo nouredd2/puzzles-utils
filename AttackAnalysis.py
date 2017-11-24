@@ -101,6 +101,7 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
                     warned = True
 
                     conn = TCPConnection(dst, tcp.ack-1, 0, tcp.dport)
+                    conn.synack_received = ts
                     timing[dst][tcp.ack-1] = conn
             else:
                 ANPrint("[WARNING:] Received SYNACK packet for non tracked host %s" % dst, verbose)
@@ -128,6 +129,7 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
                     warned = True
 
                     conn = TCPConnection(src, tcp.seq - 1, 0, tcp.sport)
+                    conn.ack_sent = ts
                     timing[src][tcp.seq-1] = conn
 
         # RST packets
