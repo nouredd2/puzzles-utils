@@ -376,6 +376,9 @@ def compute_all_rates(pcap_file, interval_s, target_ips, verbose=0):
         for conn in sorted_items:
             syn_sent = conn.syn_sent
 
+            if syn_sent == 0:
+                continue
+
             # ack has been sent, check which bucket we're counting
             if start_ts == 0:
                 start_ts = syn_sent
@@ -407,6 +410,11 @@ def compute_all_rates(pcap_file, interval_s, target_ips, verbose=0):
             ack_sent = conn.ack_sent
             synack_received = conn.synack_received
 
+            # check for the ack packets going for the FIN packets
+            if conn.syn_sent == 0:
+                # this is an FIN packet or an application packet
+                continue
+
             # check if the syn ack has been received
             if synack_received > 0:
                 num_synacked += 1
@@ -414,11 +422,6 @@ def compute_all_rates(pcap_file, interval_s, target_ips, verbose=0):
             # check if the ack has been sent
             if conn.syn_sent > 0 and ack_sent == 0:
                 num_failed += 1
-                continue
-
-            # check for the ack packets going for the FIN packets
-            if conn.syn_sent == 0:
-                # this is an FIN packet or an application packet
                 continue
 
             # count this as a completed connection, it is tricky though that
