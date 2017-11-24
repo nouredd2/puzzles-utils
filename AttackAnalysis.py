@@ -27,6 +27,12 @@ def ANPrint(message, verbose):
 
 
 def populate_connections(pz_cap, verbose=False, target_ips=set()):
+    """
+    In this case, I will treat retransmissions as separate connection
+    class since we need to account for them in the analysis. I will always
+    add the ACK received to the last sent SYN.
+
+    """
     timing = {}
     for ts, buf in pz_cap:
         try:
@@ -292,14 +298,14 @@ def compute_all_rates(pcap_file, interval_s, target_ips, verbose=0):
     end_time = time.time()
     ANPrint("Time to read pcap file " + str(end_time - start_time), verbose == 2)
 
+    start_time = time.time()
     timing = populate_connections(rcap, verbose == 2, target_ips)
 
     syn_rates = {}
     connection_rates = {}
 
-    start_time = time.time()
     for host, conn_dict in timing.items():
-        num_attempted = len(conn_dict)
+        num_attempted = 0
         num_acked = 0
         num_failed = 0
         num_synacked = 0
@@ -331,6 +337,9 @@ def compute_all_rates(pcap_file, interval_s, target_ips, verbose=0):
                 assert (syn_sent - start_ts < interval_s)
             else:
                 sending_rate[curr_bucket] += 1
+
+            if conn.IsRetransmitted():
+                num_attempted += (1 + np.size(conn.syn_retransmissions))
 
         # now will have to do the establishment rate but do the sorting based on the ack_sent
         # numbers (Actually from the server's end, it should be the ack_received)
