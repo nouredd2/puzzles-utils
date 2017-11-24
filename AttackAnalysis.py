@@ -183,38 +183,58 @@ def compute_sending_rate(pcap_file, interval_s, verbose=False):
     for host, conn_dict in timing.items():
         effective_rate = np.array([0])
         start_ts = 0
-        curr_bucket = 0
         num_sent = 0
         sorted_items = sorted(conn_dict.values(), key=operator.attrgetter('syn_sent'))
-        num_attempted = 0
         for conn in sorted_items:
             syn_sent = conn.syn_sent
+
+            # trim out the ACKs that are not for handshakes
+            if syn_sent == 0:
+                continue
 
             # count this as a completed connection, it is tricky though that
             # we do not know for sure what happened here, did it reach the
             # established state or did it have to timeout?
-            num_sent += 1
+            num_sent += (1 + np.size(conn.syn_retransmissions))
 
             # ack has been sent, check which bucket we're counting
             if start_ts == 0:
                 start_ts = syn_sent
 
-            if (syn_sent - start_ts) > interval_s:
-                skipped = int((syn_sent - start_ts)) / interval_s
-                if skipped > 1:
-                    filling = [0] * (skipped - 1)
-                    effective_rate = np.append(effective_rate, filling)
-                curr_bucket += skipped - 1
-
-                effective_rate = np.append(effective_rate, 1)
-                curr_bucket += 1
-
-                start_ts = start_ts + skipped * interval_s
-                assert (syn_sent - start_ts < interval_s)
+            bucket = int((syn_sent - start_ts) / interval_s)
+            if bucket < len(effective_rate):
+                effective_rate[bucket] += 1
             else:
-                effective_rate[curr_bucket] += 1
+                num_filling = bucket + 1 - len(effective_rate)
+                filling = [0] * num_filling
+                effective_rate = np.append(effective_rate, filling)
+                effective_rate[bucket] = 1
 
-            num_attempted += (1 + np.size(conn.syn_retransmissions))
+            # go over retransmissions
+            for rts in conn.syn_retransmissions:
+                bucket = int((rts - start_ts) / interval_s)
+                if bucket < len(effective_rate):
+                    effective_rate[bucket] += 1
+                else:
+                    num_filling = bucket + 1 - len(effective_rate)
+                    filling = [0] * num_filling
+                    effective_rate = np.append(effective_rate, filling)
+                    effective_rate[bucket] = 1
+
+            # if (syn_sent - start_ts) > interval_s:
+            #     skipped = int((syn_sent - start_ts)) / interval_s
+            #     if skipped > 1:
+            #         filling = [0] * (skipped - 1)
+            #         effective_rate = np.append(effective_rate, filling)
+            #     curr_bucket += skipped - 1
+            #
+            #     effective_rate = np.append(effective_rate, 1)
+            #     curr_bucket += 1
+            #
+            #     start_ts = start_ts + skipped * interval_s
+            #     assert (syn_sent - start_ts < interval_s)
+            # else:
+            #     effective_rate[curr_bucket] += 1
 
         sending_rates[host] = effective_rate
 
@@ -222,6 +242,7 @@ def compute_sending_rate(pcap_file, interval_s, verbose=False):
         print "Statistics for host %s" % host
         print "Total number of SYN packets sent :     \t", num_sent
         print "Average SYN rate:                      \t", np.average(effective_rate) / interval_s
+        print "Number of buckets computed :           \t", np.size(effective_rate)
         print "+----------------------------------------------------+"
 
     return sending_rates 
