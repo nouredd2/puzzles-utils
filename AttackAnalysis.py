@@ -315,6 +315,8 @@ def compute_sending_rate(pcap_file, interval_s, host, verbose=0):
         else:
             sending_rate[curr_bucket] += 1
 
+        num_packets += 1
+
     if verbose == 1:
         print "+----------------------------------------------------+"
         print "Statistics for host %s" % host
