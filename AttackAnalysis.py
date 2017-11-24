@@ -280,7 +280,6 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False):
             ack_sent = conn.ack_sent
             synack_received = conn.synack_received
 
-            num_attempted += (1 + np.size(conn.syn_retransmissions))
             # check if the syn ack has been received
             if synack_received > 0:
                 num_synacked += 1
@@ -294,6 +293,8 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False):
             if conn.syn_sent == 0:
                 # this is an FIN packet or an application packet
                 continue
+
+            num_attempted += (1 + np.size(conn.syn_retransmissions))
 
             # count this as a completed connection, it is tricky though that
             # we do not know for sure what happened here, did it reach the
