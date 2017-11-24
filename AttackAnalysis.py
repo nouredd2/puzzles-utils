@@ -389,8 +389,13 @@ def compute_all_rates(pcap_file, interval_s, target_ips, verbose=0):
                 num_synacked += 1
 
             # check if the ack has been sent
-            if ack_sent == 0:
+            if conn.syn_sent > 0 and ack_sent == 0:
                 num_failed += 1
+                continue
+
+            # check for the ack packets going for the FIN packets
+            if conn.syn_sent == 0:
+                # this is an FIN packet or an application packet
                 continue
 
             # count this as a completed connection, it is tricky though that
