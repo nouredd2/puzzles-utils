@@ -265,7 +265,7 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False):
                 num_synacked += 1
 
             # check if the ack has been sent
-            if ack_sent == 0:
+            if conn.syn_sent > 0 and ack_sent == 0:
                 num_failed += 1
                 continue
 
