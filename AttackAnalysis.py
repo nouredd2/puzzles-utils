@@ -93,7 +93,7 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
                 ANPrint("           Packet at received at time %lf" % ts, verbose)
 
         # Client response
-        if (not (tcp.flags & SYN)) and (tcp.flags & ACK):
+        if (not (tcp.flags & SYN)) and (tcp.flags & ACK) and (not tcp.flags & FIN):
             src = ip_to_str(ip.src)
 
             # check if I am applying some filter over the nodes
