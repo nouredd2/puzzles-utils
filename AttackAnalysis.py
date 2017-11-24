@@ -34,6 +34,7 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
 
     """
     timing = {}
+    warned = False
     for ts, buf in pz_cap:
         try:
             eth = dpkt.ethernet.Ethernet(buf)
@@ -70,7 +71,12 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
                 timing[src][tcp.seq] = TCPConnection(src, tcp.seq, ts, tcp.sport)
             else:
                 conn = timing[src][tcp.seq]
-                conn.syn_retransmissions = np.append(conn.syn_retransmissions, ts)
+                # account for out of order recording
+                if conn.syn_sent == 0:
+                    conn.syn_sent = ts
+                else:
+                    conn.syn_retransmissions = np.append(conn.syn_retransmissions, ts)
+                # OCD put back
                 timing[src][tcp.seq] = conn
 
         # Server response
@@ -87,6 +93,14 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
                     # print pkt[TCP].seq, pkt[TCP].ack
                     conn = timing[dst][tcp.ack-1]
                     conn.synack_received = ts
+                    timing[dst][tcp.ack-1] = conn
+                else:
+                    # account for out of order recording
+                    # issue warning only one
+                    ANPrint("[WARNING:] Packets in cap file are out of order.", not warned)
+                    warned = True
+
+                    conn = TCPConnection(dst, tcp.ack-1, 0, tcp.dport)
                     timing[dst][tcp.ack-1] = conn
             else:
                 ANPrint("[WARNING:] Received SYNACK packet for non tracked host %s" % dst, verbose)
@@ -106,6 +120,15 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
                     conn = timing[src][tcp.seq - 1]
                     conn.ack_sent = ts
                     timing[src][tcp.seq - 1] = conn
+                else:
+                    # handle out of order cap file
+                    # NOTE: THIS WORKS FOR ATTACKERS BECAUSE THERE ARE NO APPLICATIONS BUT NOT GOOD CLIENTS
+                    # THIS DOES NOT WORK.
+                    ANPrint("[WARNING:] Packets in cap file are out of order.", not warned)
+                    warned = True
+
+                    conn = TCPConnection(src, tcp.seq - 1, 0, tcp.sport)
+                    timing[src][tcp.seq-1] = conn
 
         # RST packets
         if tcp.flags & RST:
