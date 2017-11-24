@@ -161,6 +161,7 @@ def compute_sending_rate(pcap_file, interval_s, verbose=False):
         curr_bucket = 0
         num_sent = 0
         sorted_items = sorted(conn_dict.values(), key=operator.attrgetter('syn_sent'))
+        num_attempted = 0
         for conn in sorted_items:
             syn_sent = conn.syn_sent
 
@@ -187,6 +188,8 @@ def compute_sending_rate(pcap_file, interval_s, verbose=False):
                 assert (syn_sent - start_ts < interval_s)
             else:
                 effective_rate[curr_bucket] += 1
+
+            num_attempted += (1 + np.size(conn.syn_retransmissions))
 
         sending_rates[host] = effective_rate
 
@@ -222,7 +225,7 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False):
         effective_rate = np.array([0])
         start_ts = 0
         curr_bucket = 0
-        num_attempted = len(conn_dict)
+        num_attempted = 0
         num_acked = 0
         num_failed = 0
         num_synacked = 0
@@ -263,6 +266,8 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False):
                 assert (ack_sent - start_ts < interval_s)
             else:
                 effective_rate[curr_bucket] += 1
+
+            num_attempted += (1 + np.size(conn.syn_retransmissions))
 
         attack_rates[host] = effective_rate
 
@@ -338,8 +343,7 @@ def compute_all_rates(pcap_file, interval_s, target_ips, verbose=0):
             else:
                 sending_rate[curr_bucket] += 1
 
-            if conn.IsRetransmitted():
-                num_attempted += (1 + np.size(conn.syn_retransmissions))
+            num_attempted += (1 + np.size(conn.syn_retransmissions))
 
         # now will have to do the establishment rate but do the sorting based on the ack_sent
         # numbers (Actually from the server's end, it should be the ack_received)
