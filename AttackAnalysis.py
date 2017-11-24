@@ -269,6 +269,11 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False):
                 num_failed += 1
                 continue
 
+            # check for the ack packets going for the FIN packets
+            if conn.syn_sent == 0:
+                # this is an FIN packet or an application packet
+                continue
+
             # count this as a completed connection, it is tricky though that
             # we do not know for sure what happened here, did it reach the
             # established state or did it have to timeout?
