@@ -234,6 +234,7 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False):
             ack_sent = conn.ack_sent
             synack_received = conn.synack_received
 
+            num_attempted += (1 + np.size(conn.syn_retransmissions))
             # check if the syn ack has been received
             if synack_received > 0:
                 num_synacked += 1
@@ -266,8 +267,6 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False):
                 assert (ack_sent - start_ts < interval_s)
             else:
                 effective_rate[curr_bucket] += 1
-
-            num_attempted += (1 + np.size(conn.syn_retransmissions))
 
         attack_rates[host] = effective_rate
 
