@@ -38,4 +38,4 @@ set -x
 sleep 10 
 cd ~/proj/results/
 tar -czvf results$ARCHIVE.tar.gz *.cap
-rm *.cap
+rm -f *.cap
