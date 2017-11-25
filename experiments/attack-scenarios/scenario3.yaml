@@ -1,22 +1,19 @@
 groups:
-  client_group: [clientnode-1,clientnode-2]
-  server_group: &slist [servernode-1]
-  attack_group: [attacknode-1]
+  benign_group: [clientnode-1, clientnode-2, clientnode-3, clientnode-4, clientnode-5, clientnode-6, clientnode-7,
+                 clientnode-8, clientnode-9, clientnode-10, clientnode-11, clientnode-12, clientnode-13, clientnode-14, clientnode-15]
+  server_group: &slist [servernode]
+  bad_group: [attacknode-1, attacknode-2, attacknode-3, attacknode-4, attacknode-5, attacknode-6, attacknode-7,
+                 attacknode-8, attacknode-9, attacknode-10]
 
 agents:
   client_agent:
-    group: client_group
+    group: benign_group
     path: /share/magi/modules/http_client/http_client.tar.gz
-    execargs: {servers: *slist, interval: '0.0625', sizes: '10000'}
+    execargs: {servers: *slist, interval: 'expo(20)', sizes: '10000'}
 
   server_agent:
     group: server_group
     path: /share/magi/modules/apache/apache.tar.gz 
-    execargs: []
-
-  dump_agent:
-    group: client_group 
-    path: /share/magi/modules/tcpdump/tcpdump.tar.gz
     execargs: []
 
   log_agent:
@@ -24,53 +21,90 @@ agents:
     path: /share/magi/modules/tcpdump/tcpdump.tar.gz
     execargs: []
 
-  attack_agent:
-    group: attack_group
+  dump_agent:
+    group: benign_group
+    path: /share/magi/modules/tcpdump/tcpdump.tar.gz
+    execargs: []
+
+  attack_log:
+    group: bad_group
+    path: /share/magi/modules/tcpdump/tcpdump.tar.gz
+    execargs: []
+
+  nping_agent:
+    group: bad_group
+    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
+    execargs: []
+
+  challenge_agent:
+    group: server_group
+    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
+    execargs: []
+
+  sar_agent:
+    group: server_group
     path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
     execargs: []
 
 ## The mapping from the AAL procedure to the experiment apparatus 
-streamstarts: [serverstream, clientstream, monitor, attackstream]
+streamstarts: [serverstream, clientstream, monitor, attackstream, challenge]
 
 eventstreams:
+  challenge:
+    - type: event
+      agent: challenge_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 1 4" }
+
+    - type: event
+      agent: challenge_agent
+      method: start
+      args: {}
+
+    - type: event
+      agent: challenge_agent
+      method: stop
+      trigger: SetChallengeComplete
+      args: {}
+
   attackstream:
     - type: trigger
       triggers: [ { event: serverStarted } ]
 
     - type: event
-      agent: attack_agent
+      agent: nping_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/run_hping3.sh 1000" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/run_nping.sh 500" }
 
     # attack starts after 2 minutes
     - type: trigger
       triggers: [ { timeout: 120000 } ]
 
     - type: event
-      agent: attack_agent
+      agent: nping_agent
       method: start
       args: {}
 
-    # attack ends 2 minutes after
+    # attack ends after 6 minutes
     - type: trigger
-      triggers: [ { timeout: 120000 } ]
+      triggers: [ { timeout: 360000 } ]
 
     # attack ends at the end of the simulation
     # - type: trigger
     #   triggers: [ { event: serverStopped } ]
       
     - type: event
-      agent: attack_agent
+      agent: nping_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/kill_hping3.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/kill_nping.sh" }
 
     - type: event
-      agent: attack_agent
+      agent: nping_agent
       method: start
       args: {}
 
     - type: event
-      agent: attack_agent
+      agent: nping_agent
       method: stop
       args: {}
 
@@ -78,12 +112,17 @@ eventstreams:
     - type: event
       agent: dump_agent 
       method: startCollection
-      args: { destination: "servernode-1", expression: "", tcpdump_args: "-U" }
+      args: { destination: "servernode", expression: "" }
 
     - type: event
       agent: log_agent
       method: startCollection
-      args: { destination: "attacknode-1", expression: "", tcpdump_args: "-U" }
+      args: { destination: "attacknode-1", expression: "" }
+
+    - type: event
+      agent: attack_log
+      method: startCollection
+      args: { destination: "servernode", expression: "" }
   
     - type: trigger
       triggers: [ { event: serverStopped } ] 
@@ -94,6 +133,15 @@ eventstreams:
     - type: event
       agent: dump_agent
       method: stopCollection
+      trigger: serverDumped 
+      args: {}
+
+    - type: trigger
+      triggers: [ {event: serverDumped} ]
+
+    - type: event
+      agent: log_agent
+      method: stopCollection
       trigger: dumpStopped 
       args: {}
   
@@ -101,30 +149,42 @@ eventstreams:
       triggers: [ {event: dumpStopped} ]
 
     - type: event
-      agent: log_agent
+      agent: attack_log
       method: stopCollection
-      trigger: serverdumpStop
+      trigger: adumpStopped
       args: {}
 
     - type: trigger
-      triggers: [ {event: serverdumpStop} ]
-
+      triggers: [ {event: adumpStopped} ]
+  
     - type: event
-      agent: log_agent
+      agent: dump_agent
       method: archiveDump
       trigger: serverDumped
       args: { archivepath: /proj/ILLpuzzle/results/ }
 
     - type: trigger
       triggers: [ {event: serverDumped} ]
-  
+
     - type: event
-      agent: dump_agent
+      agent: attack_log
+      method: archiveDump
+      trigger: attackerDumped
+      args: { archivepath: /proj/ILLpuzzle/results/ }
+
+    - type: trigger
+      triggers: [ {event: attackerDumped} ]
+
+    - type: event
+      agent: log_agent
       trigger: filesCopied
       method: archiveDump
       args: { archivepath: /proj/ILLpuzzle/results/ }
 
   serverstream: 
+    - type: trigger
+      triggers: [ { event: SetChallengeComplete } ]
+
     - type: event
       agent: server_agent 
       method: startServer
@@ -150,8 +210,7 @@ eventstreams:
         args: {}
 
       - type: trigger
-        triggers: [ { timeout: 300000 } ]
-
+        triggers: [ { timeout: 600000 } ]
 
       - type: event
         agent: client_agent

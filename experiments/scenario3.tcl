@@ -7,11 +7,17 @@ set kernel_start "sudo /proj/ILLpuzzle/scripts/install_kernel.sh"
 set Clients 15 
 set Attackers 10
 
+tb-make-soft-vtype client1 {MicroCloud pc2133}
+tb-make-soft-vtype client2 {MicroCloud pc2133x}
+tb-make-soft-vtype attacker1 {MicroCloud pc3000}
+tb-make-soft-vtype attacker2 {MicroCloud pc3060}
+
 # Client LAN 1
 set clanstr1 ""
 for {set i 1 } {$i <= 5 } { incr i } {   
         set clientnode($i) [$ns node]
         tb-set-node-startcmd $clientnode($i) "$kernel_start" 
+        tb-set-hardware $clientnode($i) client1
         append clanstr1 "$clientnode($i) "
 }
 
@@ -20,6 +26,7 @@ set clanstr2  ""
 for {set i 6 } {$i <= 10} { incr i } {
         set clientnode($i) [$ns node]
         tb-set-node-startcmd $clientnode($i) "$kernel_start" 
+        tb-set-hardware $clientnode($i) client2
         append clanstr2 "$clientnode($i) "
 }
 
@@ -36,6 +43,7 @@ set alanstr1 ""
 for {set i 1 } {$i <= 5 } { incr i } {   
         set attacknode($i) [$ns node]
         tb-set-node-startcmd $attacknode($i) "$kernel_start" 
+        tb-set-hardware $attacknode($i) attacker1
         append alanstr1 "$attacknode($i) "
 }  
 
@@ -44,6 +52,7 @@ set alanstr2 ""
 for {set i 6 } {$i <= 10 } { incr i } {   
         set attacknode($i) [$ns node]
         tb-set-node-startcmd $attacknode($i) "$kernel_start" 
+        tb-set-hardware $attacknode($i) attacker2
         append alanstr2 "$attacknode($i) "
 }  
 
