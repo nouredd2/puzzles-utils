@@ -232,6 +232,10 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False):
                 # this is an FIN packet or an application packet
                 continue
 
+            # check if the server dropped this connection
+            if conn.IsDroppedByServer():
+                num_failed += 1
+
             # count this as a completed connection, it is tricky though that
             # we do not know for sure what happened here, did it reach the
             # established state or did it have to timeout?
@@ -439,6 +443,10 @@ def compute_all_rates(pcap_file, interval_s, target_ips, verbose=0):
             if conn.syn_sent > 0 and ack_sent == 0:
                 num_failed += 1
                 continue
+
+            # check if the server dropped this connection
+            if conn.IsDroppedByServer():
+                num_failed += 1
 
             # count this as a completed connection, it is tricky though that
             # we do not know for sure what happened here, did it reach the
