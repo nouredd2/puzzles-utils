@@ -34,7 +34,9 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
 
     """
     timing = {}
+    expected_seq_num = {}
     warned = False
+    rst_warned = False
     for ts, buf in pz_cap:
         try:
             eth = dpkt.ethernet.Ethernet(buf)
@@ -68,7 +70,8 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
 
             # print pkt[TCP].seq, pkt[TCP].ack
             if tcp.seq not in timing[src]:
-                timing[src][tcp.seq] = TCPConnection(src, tcp.seq, ts, tcp.sport)
+                conn = TCPConnection(src, tcp.seq, ts, tcp.sport)
+                timing[src][tcp.seq] = conn
             else:
                 conn = timing[src][tcp.seq]
                 # account for out of order recording
@@ -78,6 +81,9 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
                     conn.syn_retransmissions = np.append(conn.syn_retransmissions, ts)
                 # OCD put back
                 timing[src][tcp.seq] = conn
+
+            # initialize one entry per (ip,port) pair from the source, capture expected sequence number
+            expected_seq_num[(src, tcp.sport)] = {}
 
         # Server response
         if tcp.flags & SYN and (tcp.flags & ACK):
@@ -121,6 +127,10 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
                     conn = timing[src][tcp.seq - 1]
                     conn.ack_sent = ts
                     timing[src][tcp.seq - 1] = conn
+
+                    # save the expected sequence number from the server to make sure the connection was not reset
+                    if (src, tcp.sport) in expected_seq_num:
+                        expected_seq_num[src, tcp.sport][tcp.ack] = conn
                 else:
                     # handle out of order cap file
                     # NOTE: THIS WORKS FOR ATTACKERS BECAUSE THERE ARE NO APPLICATIONS BUT NOT GOOD CLIENTS
@@ -142,17 +152,29 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
 
             if dst in timing:
                 # print "[Log:] Host %s received a RST packet from the server" % dst
-                port = tcp.dport
-                reused = 0
-                for seq in timing[dst].iterkeys():
-                    conn = timing[dst][seq]
-                    if conn.sport == port:
-                        # found it
-                        conn.SetResetFlag(ts)
-                        reused = reused + 1
+                if tcp.seq in expected_seq_num[(dst, tcp.dport)]:
+                    ANPrint("[Log:] Server reset connection after ACK establishment for host %s" % dst, verbose)
+                    ANPrint("       At port number %d with expected sequence number %d" % (tcp.dport, tcp.seq), verbose)
+                    conn = expected_seq_num[(dst, tcp.dport)][tcp.seq]
+                    conn.SetResetFlag(ts)
+                else:
+                    if not rst_warned:
+                        print "[Warning:] Received RST packet for a non tracked connection. This should only happen for \
+                              benign clients."
+                        print "[Warning:] Will display this warning only once."
+                        rst_warned = True
 
-                if reused > 1:
-                    ANPrint("[WARNING:] Port %d have been reused. Results cannot be trusted!" % port, verbose)
+                # port = tcp.dport
+                # reused = 0
+                # for seq in timing[dst].iterkeys():
+                #     conn = timing[dst][seq]
+                #     if conn.sport == port:
+                #         # found it
+                #         conn.SetResetFlag(ts)
+                #         reused = reused + 1
+                #
+                # if reused > 1:
+                #     ANPrint("[WARNING:] Port %d have been reused. Results cannot be trusted!" % port, verbose)
 
             else:
                 ANPrint("[WARNING:] Received RST packet for non tracked host %s" % dst, verbose)
