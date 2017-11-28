@@ -159,9 +159,9 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
                     conn.SetResetFlag(ts)
                 else:
                     if not rst_warned:
-                        print "[Warning:] Received RST packet for a non tracked connection. This should only happen for \
-                              benign clients."
-                        print "[Warning:] Will display this warning only once."
+                        print "[WARNING:] Received RST packet for a non tracked connection at host %s. \
+                                This should only happen for benign clients." % dst
+                        print "[WARNING:] Will display this warning only once."
                         rst_warned = True
 
                 # port = tcp.dport
