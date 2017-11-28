@@ -5,7 +5,7 @@ import time
 import dpkt
 import socket
 import operator
-from connection import TCPConnection, ThroughputEntry
+from connection import TCPConnection
 
 FIN = 0x01
 SYN = 0x02
@@ -238,6 +238,7 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False):
             # check if the server dropped this connection
             if conn.IsDroppedByServer():
                 num_failed += 1
+                continue
 
             # count this as a completed connection, it is tricky though that
             # we do not know for sure what happened here, did it reach the
