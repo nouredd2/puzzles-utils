@@ -83,7 +83,8 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
                 timing[src][tcp.seq] = conn
 
             # initialize one entry per (ip,port) pair from the source, capture expected sequence number
-            expected_seq_num[(src, tcp.sport)] = {}
+            if (src, tcp.sport) not in expected_seq_num:
+                expected_seq_num[(src, tcp.sport)] = {}
 
         # Server response
         if tcp.flags & SYN and (tcp.flags & ACK):
@@ -159,8 +160,8 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
                     conn.SetResetFlag(ts)
                 else:
                     if not rst_warned:
-                        print "[WARNING:] Received RST packet for a non tracked connection at host %s. \
-                                This should only happen for benign clients." % dst
+                        print "[WARNING:] Received RST packet for a non tracked connection at host %s at ts %lf. " \
+                               "This should only happen for benign clients." % (dst,ts)
                         print "[WARNING:] Will display this warning only once."
                         rst_warned = True
 
