@@ -188,7 +188,8 @@ def fill_connections(pz_cap, verbose=False, target_ips=set()):
 
 def get_col(arr, col):
     # Source: https://stackoverflow.com/questions/903853/how-do-you-extract-a-column-from-a-multi-dimensional-array
-    return map(lambda x: x[col], arr)
+    m = map(lambda x: x[col], arr)
+    return np.array(m, dtype=np.float)
 
 
 def compute_client_percentage(pcap_file, interval_s, verbose=False, target_ips=set()):
@@ -211,7 +212,7 @@ def compute_client_percentage(pcap_file, interval_s, verbose=False, target_ips=s
 
     client_percentage_connections = {}
     for host, conn_dict in timing.items():
-        arr_percentage = np.array([])
+        arr_percentage = np.array([[0,0]])
         start_ts = 0
         curr_bucket = 0
         num_attempted = 0
@@ -253,13 +254,13 @@ def compute_client_percentage(pcap_file, interval_s, verbose=False, target_ips=s
                 skipped = int((syn_sent - start_ts)) / interval_s
                 if skipped > 1:
                     filling = [[0, 0]] * (skipped - 1)
-                    arr_percentage = np.append(arr_percentage, filling)
+                    arr_percentage = np.vstack((arr_percentage, filling))
                 curr_bucket += skipped - 1
 
                 entry = [1, 0]
                 if (not conn.IsDroppedByServer()) and (conn.ack_sent > 0):
                     entry = [1, 1]
-                arr_percentage = np.append(arr_percentage, entry)
+                arr_percentage = np.vstack((arr_percentage, entry))
                 curr_bucket += 1
 
                 start_ts = start_ts + skipped * interval_s
@@ -269,7 +270,7 @@ def compute_client_percentage(pcap_file, interval_s, verbose=False, target_ips=s
                 entry[0] += 1
                 if (not conn.IsDroppedByServer()) and (conn.ack_sent > 0):
                     entry[1] += 1
-                arr_percentage[curr_bucket] += entry
+                arr_percentage[curr_bucket] = entry
 
         client_percentage_connections[host] = arr_percentage
 
@@ -280,7 +281,7 @@ def compute_client_percentage(pcap_file, interval_s, verbose=False, target_ips=s
         print "Total number of failed connections:    \t", num_failed
         print "Total number of replies received:      \t", num_synacked
         print "Average establishment rate:            \t", \
-            np.average(get_col(arr_percentage, 1) / get_col(arr_percentage, 0)) / interval_s
+            np.average(get_col(arr_percentage, 1) / get_col(arr_percentage, 0))
         print "+----------------------------------------------------+"
 
     return client_percentage_connections
