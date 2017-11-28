@@ -153,6 +153,9 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
 
             if dst in timing:
                 # print "[Log:] Host %s received a RST packet from the server" % dst
+                if (dst, tcp.dport) not in expected_seq_num:
+                    print "[WARNING:] Packet for (%s,%d) does not have a record for expected sequence number. " \
+                            "This indicates that the SYN packet was not yet sent."
                 if tcp.seq in expected_seq_num[(dst, tcp.dport)]:
                     ANPrint("[Log:] Server reset connection after ACK establishment for host %s" % dst, verbose)
                     ANPrint("       At port number %d with expected sequence number %d" % (tcp.dport, tcp.seq), verbose)
