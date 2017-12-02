@@ -5,7 +5,7 @@ import time
 import dpkt
 import socket
 import operator
-from connection import TCPConnection, ThroughputEntry
+from connection import TCPConnection
 
 FIN = 0x01
 SYN = 0x02
@@ -34,7 +34,9 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
 
     """
     timing = {}
+    expected_seq_num = {}
     warned = False
+    rst_warned = False
     for ts, buf in pz_cap:
         try:
             eth = dpkt.ethernet.Ethernet(buf)
@@ -68,7 +70,8 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
 
             # print pkt[TCP].seq, pkt[TCP].ack
             if tcp.seq not in timing[src]:
-                timing[src][tcp.seq] = TCPConnection(src, tcp.seq, ts, tcp.sport)
+                conn = TCPConnection(src, tcp.seq, ts, tcp.sport)
+                timing[src][tcp.seq] = conn
             else:
                 conn = timing[src][tcp.seq]
                 # account for out of order recording
@@ -78,6 +81,10 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
                     conn.syn_retransmissions = np.append(conn.syn_retransmissions, ts)
                 # OCD put back
                 timing[src][tcp.seq] = conn
+
+            # initialize one entry per (ip,port) pair from the source, capture expected sequence number
+            if (src, tcp.sport) not in expected_seq_num:
+                expected_seq_num[(src, tcp.sport)] = {}
 
         # Server response
         if tcp.flags & SYN and (tcp.flags & ACK):
@@ -121,6 +128,10 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
                     conn = timing[src][tcp.seq - 1]
                     conn.ack_sent = ts
                     timing[src][tcp.seq - 1] = conn
+
+                    # save the expected sequence number from the server to make sure the connection was not reset
+                    if (src, tcp.sport) in expected_seq_num:
+                        expected_seq_num[src, tcp.sport][tcp.ack] = conn
                 else:
                     # handle out of order cap file
                     # NOTE: THIS WORKS FOR ATTACKERS BECAUSE THERE ARE NO APPLICATIONS BUT NOT GOOD CLIENTS
@@ -142,110 +153,37 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
 
             if dst in timing:
                 # print "[Log:] Host %s received a RST packet from the server" % dst
-                port = tcp.dport
-                reused = 0
-                for seq in timing[dst].iterkeys():
-                    conn = timing[dst][seq]
-                    if conn.sport == port:
-                        # found it
-                        conn.SetResetFlag(ts)
-                        reused = reused + 1
+                if (dst, tcp.dport) not in expected_seq_num:
+                    print "[WARNING:] Packet for (%s,%d) does not have a record for expected sequence number. " \
+                            "This indicates that the SYN packet was not yet sent." %(dst, tcp.dport)
+                elif tcp.seq in expected_seq_num[(dst, tcp.dport)]:
+                    ANPrint("[Log:] Server reset connection after ACK establishment for host %s" % dst, verbose)
+                    ANPrint("       At port number %d with expected sequence number %d" % (tcp.dport, tcp.seq), verbose)
+                    conn = expected_seq_num[(dst, tcp.dport)][tcp.seq]
+                    conn.SetResetFlag(ts)
+                else:
+                    if not rst_warned:
+                        print "[WARNING:] Received RST packet for a non tracked connection at host %s at ts %lf. " \
+                               "This should only happen for benign clients." % (dst,ts)
+                        print "[WARNING:] Will display this warning only once."
+                        rst_warned = True
 
-                if reused > 1:
-                    ANPrint("[WARNING:] Port %d have been reused. Results cannot be trusted!" % port, verbose)
+                # port = tcp.dport
+                # reused = 0
+                # for seq in timing[dst].iterkeys():
+                #     conn = timing[dst][seq]
+                #     if conn.sport == port:
+                #         # found it
+                #         conn.SetResetFlag(ts)
+                #         reused = reused + 1
+                #
+                # if reused > 1:
+                #     ANPrint("[WARNING:] Port %d have been reused. Results cannot be trusted!" % port, verbose)
 
             else:
                 ANPrint("[WARNING:] Received RST packet for non tracked host %s" % dst, verbose)
 
     return timing
-
-
-def compute_sending_rate(pcap_file, interval_s, verbose=False):
-    """
-    Compute the effective sending rate from an attackers
-    pcap file.
-
-    @pcap_file: The pcap file to parse
-    @interval_s: The interval for which to compute the effective sending rate
-    @verbose: Flood out the printing if true
-
-    """
-
-    start_time = time.time()
-    f = open(pcap_file)
-    rcap = dpkt.pcap.Reader(f)
-    end_time = time.time()
-    ANPrint("Time to read pcap file " + str(end_time - start_time), verbose)
-
-    timing = populate_connections(rcap, verbose)
-
-    sending_rates = {}
-    for host, conn_dict in timing.items():
-        effective_rate = np.array([0])
-        start_ts = 0
-        num_sent = 0
-        sorted_items = sorted(conn_dict.values(), key=operator.attrgetter('syn_sent'))
-        for conn in sorted_items:
-            syn_sent = conn.syn_sent
-
-            # trim out the ACKs that are not for handshakes
-            if syn_sent == 0:
-                continue
-
-            # count this as a completed connection, it is tricky though that
-            # we do not know for sure what happened here, did it reach the
-            # established state or did it have to timeout?
-            num_sent += (1 + np.size(conn.syn_retransmissions))
-
-            # ack has been sent, check which bucket we're counting
-            if start_ts == 0:
-                start_ts = syn_sent
-
-            bucket = int((syn_sent - start_ts) / interval_s)
-            if bucket < len(effective_rate):
-                effective_rate[bucket] += 1
-            else:
-                num_filling = bucket + 1 - len(effective_rate)
-                filling = [0] * num_filling
-                effective_rate = np.append(effective_rate, filling)
-                effective_rate[bucket] = 1
-
-            # go over retransmissions
-            for rts in conn.syn_retransmissions:
-                bucket = int((rts - start_ts) / interval_s)
-                if bucket < len(effective_rate):
-                    effective_rate[bucket] += 1
-                else:
-                    num_filling = bucket + 1 - len(effective_rate)
-                    filling = [0] * num_filling
-                    effective_rate = np.append(effective_rate, filling)
-                    effective_rate[bucket] = 1
-
-            # if (syn_sent - start_ts) > interval_s:
-            #     skipped = int((syn_sent - start_ts)) / interval_s
-            #     if skipped > 1:
-            #         filling = [0] * (skipped - 1)
-            #         effective_rate = np.append(effective_rate, filling)
-            #     curr_bucket += skipped - 1
-            #
-            #     effective_rate = np.append(effective_rate, 1)
-            #     curr_bucket += 1
-            #
-            #     start_ts = start_ts + skipped * interval_s
-            #     assert (syn_sent - start_ts < interval_s)
-            # else:
-            #     effective_rate[curr_bucket] += 1
-
-        sending_rates[host] = effective_rate
-
-        print "+----------------------------------------------------+"
-        print "Statistics for host %s" % host
-        print "Total number of SYN packets sent :     \t", num_sent
-        print "Average SYN rate:                      \t", np.average(effective_rate) / interval_s
-        print "Number of buckets computed :           \t", np.size(effective_rate)
-        print "+----------------------------------------------------+"
-
-    return sending_rates 
 
 
 def compute_effective_rate(pcap_file, interval_s, verbose=False):
@@ -297,6 +235,11 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False):
                 # this is an FIN packet or an application packet
                 continue
 
+            # check if the server dropped this connection
+            if conn.IsDroppedByServer():
+                num_failed += 1
+                continue
+
             # count this as a completed connection, it is tricky though that
             # we do not know for sure what happened here, did it reach the
             # established state or did it have to timeout?
@@ -333,6 +276,87 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False):
         print "+----------------------------------------------------+"
 
     return attack_rates
+
+
+def compute_sending_rate(pcap_file, interval_s, host, verbose=0):
+    """
+    Compute the effective sending rate from an attackers
+    pcap file.
+
+    @pcap_file: The pcap file to parse
+    @interval_s: The interval for which to compute the effective sending rate
+    @verbose: Flood out the printing if true
+
+    """
+
+    start_time = time.time()
+    f = open(pcap_file)
+    pz_cap = dpkt.pcap.Reader(f)
+    end_time = time.time()
+    ANPrint("Time to read pcap file " + str(end_time - start_time), verbose == 2)
+
+    start_ts = 0
+    sending_rate = np.array([0])
+    curr_bucket = 0
+    num_packets = 0
+    for ts, buf in pz_cap:
+        try:
+            eth = dpkt.ethernet.Ethernet(buf)
+        except:
+            continue
+
+        if not isinstance(eth.data, dpkt.ip.IP):
+            continue
+
+        ip = eth.data
+
+        if not isinstance(ip.data, dpkt.tcp.TCP):
+            continue
+
+        tcp = ip.data
+
+        # check for SYN packets
+        if not tcp.flags & SYN:
+            # not a syn packets, skip over
+            continue
+
+        if tcp.flags & SYN and tcp.flags & ACK:
+            # syn-ack packet, continue
+            continue
+
+        src = ip_to_str(ip.src)
+
+        if not src == host:
+            continue
+
+        if start_ts == 0:
+            start_ts = ts
+
+        if (ts - start_ts) > interval_s:
+            skipped = int((ts - start_ts)) / interval_s
+            if skipped > 1:
+                filling = [0] * (skipped-1)
+                sending_rate = np.append(sending_rate, filling)
+            curr_bucket += skipped - 1
+
+            sending_rate = np.append(sending_rate, 1)
+            curr_bucket += 1
+
+            start_ts = start_ts + skipped * interval_s
+        else:
+            sending_rate[curr_bucket] += 1
+
+        num_packets += 1
+
+    if verbose == 1:
+        print "+----------------------------------------------------+"
+        print "Statistics for host %s" % host
+        print "Total number of SYN packets sent :     \t", num_packets
+        print "Average SYN rate:                      \t", np.average(sending_rate) / interval_s
+        print "Number of buckets computed :           \t", np.size(sending_rate)
+        print "+----------------------------------------------------+"
+
+    return sending_rate
 
 
 def compute_all_rates(pcap_file, interval_s, target_ips, verbose=0):
@@ -424,6 +448,10 @@ def compute_all_rates(pcap_file, interval_s, target_ips, verbose=0):
                 num_failed += 1
                 continue
 
+            # check if the server dropped this connection
+            if conn.IsDroppedByServer():
+                num_failed += 1
+
             # count this as a completed connection, it is tricky though that
             # we do not know for sure what happened here, did it reach the
             # established state or did it have to timeout?
@@ -466,3 +494,91 @@ def compute_all_rates(pcap_file, interval_s, target_ips, verbose=0):
     ANPrint("Time to perform full analysis " + str(end_time - start_time), verbose == 1)
 
     return syn_rates, connection_rates
+
+
+# def compute_sending_rate(pcap_file, interval_s, verbose=False):
+#     """
+#     Compute the effective sending rate from an attackers
+#     pcap file.
+#
+#     @pcap_file: The pcap file to parse
+#     @interval_s: The interval for which to compute the effective sending rate
+#     @verbose: Flood out the printing if true
+#
+#     """
+#
+#     start_time = time.time()
+#     f = open(pcap_file)
+#     rcap = dpkt.pcap.Reader(f)
+#     end_time = time.time()
+#     ANPrint("Time to read pcap file " + str(end_time - start_time), verbose)
+#
+#     timing = populate_connections(rcap, verbose)
+#
+#     sending_rates = {}
+#     for host, conn_dict in timing.items():
+#         effective_rate = np.array([0])
+#         start_ts = 0
+#         num_sent = 0
+#         sorted_items = sorted(conn_dict.values(), key=operator.attrgetter('syn_sent'))
+#         for conn in sorted_items:
+#             syn_sent = conn.syn_sent
+#
+#             # trim out the ACKs that are not for handshakes
+#             if syn_sent == 0:
+#                 continue
+#
+#             # count this as a completed connection, it is tricky though that
+#             # we do not know for sure what happened here, did it reach the
+#             # established state or did it have to timeout?
+#             num_sent += (1 + np.size(conn.syn_retransmissions))
+#
+#             # ack has been sent, check which bucket we're counting
+#             if start_ts == 0:
+#                 start_ts = syn_sent
+#
+#             bucket = int((syn_sent - start_ts) / interval_s)
+#             if bucket < len(effective_rate):
+#                 effective_rate[bucket] += 1
+#             else:
+#                 num_filling = bucket + 1 - len(effective_rate)
+#                 filling = [0] * num_filling
+#                 effective_rate = np.append(effective_rate, filling)
+#                 effective_rate[bucket] = 1
+#
+#             # go over retransmissions
+#             for rts in conn.syn_retransmissions:
+#                 bucket = int((rts - start_ts) / interval_s)
+#                 if bucket < len(effective_rate):
+#                     effective_rate[bucket] += 1
+#                 else:
+#                     num_filling = bucket + 1 - len(effective_rate)
+#                     filling = [0] * num_filling
+#                     effective_rate = np.append(effective_rate, filling)
+#                     effective_rate[bucket] = 1
+#
+#             # if (syn_sent - start_ts) > interval_s:
+#             #     skipped = int((syn_sent - start_ts)) / interval_s
+#             #     if skipped > 1:
+#             #         filling = [0] * (skipped - 1)
+#             #         effective_rate = np.append(effective_rate, filling)
+#             #     curr_bucket += skipped - 1
+#             #
+#             #     effective_rate = np.append(effective_rate, 1)
+#             #     curr_bucket += 1
+#             #
+#             #     start_ts = start_ts + skipped * interval_s
+#             #     assert (syn_sent - start_ts < interval_s)
+#             # else:
+#             #     effective_rate[curr_bucket] += 1
+#
+#         sending_rates[host] = effective_rate
+#
+#         print "+----------------------------------------------------+"
+#         print "Statistics for host %s" % host
+#         print "Total number of SYN packets sent :     \t", num_sent
+#         print "Average SYN rate:                      \t", np.average(effective_rate) / interval_s
+#         print "Number of buckets computed :           \t", np.size(effective_rate)
+#         print "+----------------------------------------------------+"
+#
+#     return sending_rates
