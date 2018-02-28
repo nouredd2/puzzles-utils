@@ -14,11 +14,11 @@ agents:
   # and sending/receiving of puzzles)
   main_server_agent:
     group: server_group
-    path: /share/magi/modules/apache/apache.tar.gz # THIS MIGHT BE ACCURATE?
+    path: /share/magi/modules/apache/apache.tar.gz # MIGHT BE WRONG
     execargs: []
   main_client_agent:
     group: client_group
-    path: /share/magi/modules/http_client/http_client.tar.gz # NEED FILE PATH
+    path: /share/magi/modules/http_client/http_client.tar.gz # ALSO MIGHT BE WRONG
     execargs: {servers: *slist, interval: 'expo(20)', sizes: '10000'}
 
   # nping for ack flood
@@ -33,18 +33,18 @@ agents:
     execargs: []
 
   # For running the Python scripts to log CPU load, memory load, and puzzles sent/received
-  log_server_agent:
-    group: server_group
-    path: # NEED FILE PATH OF PYTHON SCRIPT
-    execargs: []
-  log_client_agent:
-    group: client_group
-    path: # NEED FILE PATH OF PYTHON SCRIPT
-    execargs: []
-  log_attack_agent:
-    group: attack_group
-    path: # NEED FILE PATH OF PYTHON SCRIPT
-    execargs: []
+  # log_server_agent:
+  #   group: server_group
+  #   path: # NEED FILE PATH OF PYTHON SCRIPT
+  #   execargs: []
+  # log_client_agent:
+  #   group: client_group
+  #   path: # NEED FILE PATH OF PYTHON SCRIPT
+  #   execargs: []
+  # log_attack_agent:
+  #   group: attack_group
+  #   path: # NEED FILE PATH OF PYTHON SCRIPT
+  #   execargs: []
 
   # For running tcpdump on the server, clients, and attackers
   dump_server_agent:
@@ -220,7 +220,7 @@ eventstreams:
   # 2. Client
   clientstream:
 
-    # Wait for serverStarted trigger (line 65)
+    # Wait for serverStarted trigger
     - type: trigger
       triggers: [ { event: serverStarted } ]
 
@@ -280,9 +280,9 @@ eventstreams:
       method: stop
       args: {}
 
-  # All events necessary for logging
+  # 4. All events necessary for logging
   monitor:
-      # 1. Start collection for server, clients, and attackers
+      # Start collection for server, clients, and attackers
     - type: event
       agent: dump_server_agent
       method: startCollection
@@ -303,13 +303,13 @@ eventstreams:
     - type: trigger
       triggers: [ { timeout: 2000 } ]
 
-      # Next 3 events stop collection for server, clients, and attackers
+      # Next 3 events sequentially stop collection for server, clients, and attackers
     - type: event
       agent: dump_server_agent
       method: stopCollection
       trigger: serverCollectionStopped
       args: {}
-    - type: trigger      # Forces these collection stops to be sequential
+    - type: trigger
       triggers: [ {event: serverCollectionStopped} ]
 
     - type: event
@@ -351,7 +351,7 @@ eventstreams:
       method: archiveDump
       args: { archivepath: /proj/ILLpuzzle/results/ }
 
-  # Exits
+  # 5. Exits
   cleanupstream:
     - type: trigger
       triggers: [ {event: allFilesArchived, target: exit} ]
