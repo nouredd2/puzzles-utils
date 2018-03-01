@@ -35,15 +35,15 @@ agents:
   # For running the Python scripts to log CPU load, memory load, and puzzles sent/received
   # log_server_agent:
   #   group: server_group
-  #   path: # NEED FILE PATH OF PYTHON SCRIPT
+  #   path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
   #   execargs: []
   # log_client_agent:
   #   group: client_group
-  #   path: # NEED FILE PATH OF PYTHON SCRIPT
+  #   path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
   #   execargs: []
   # log_attack_agent:
   #   group: attack_group
-  #   path: # NEED FILE PATH OF PYTHON SCRIPT
+  #   path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
   #   execargs: []
 
   # For running tcpdump on the server, clients, and attackers
@@ -283,7 +283,7 @@ eventstreams:
 
   # 4. All events necessary for logging
   monitor:
-      # Start collection for server, clients, and attackers
+      # Start tcpdump collection for server, clients, and attackers
     - type: event
       agent: dump_server_agent
       method: startCollection
@@ -297,12 +297,66 @@ eventstreams:
       method: startCollection
       args: { destination: "attacknode-1", expression: "" }
 
+      # Configure python logging scripts
+    # - type: event
+    #   agent: log_server_agent
+    #   method: setConfiguration
+    #   args: { cmdstring: "" } # NEED FILE PATH OF LOGGING SCRIPT
+    # - type: event
+    #   agent: log_client_agent
+    #   method: setConfiguration
+    #   args: { cmdstring: "" }
+    # - type: event
+    #   agent: log_attack_agent
+    #   method: setConfiguration
+    #   args: { cmdstring: "" }
+    #   # Actually runs the scripts
+    # - type: event
+    #   agent: log_server_agent
+    #   method: start
+    #   args: {}
+    # - type: event
+    #   agent: log_client_agent
+    #   method: start
+    #   args: {}
+    # - type: event
+    #   agent: log_attack_agent
+    #   method: start
+    #   args: {}
+
     - type: trigger
       triggers: [ { event: serverStopped } ]
 
       # 2 second delay after server stops
     - type: trigger
       triggers: [ { timeout: 2000 } ]
+
+      # Kill python logging scripts
+    # - type: event
+    #   agent: log_server_agent
+    #   method: setConfiguration
+    #   args: { cmdstring: "" } # NEED FILE PATH OF LOGGING SCRIPT
+    # - type: event
+    #   agent: log_client_agent
+    #   method: setConfiguration
+    #   args: { cmdstring: "" }
+    # - type: event
+    #   agent: log_attack_agent
+    #   method: setConfiguration
+    #   args: { cmdstring: "" }
+    #   # Actually runs the script to kill the python loggin scripts
+    # - type: event
+    #   agent: log_server_agent
+    #   method: start
+    #   args: {}
+    # - type: event
+    #   agent: log_client_agent
+    #   method: start
+    #   args: {}
+    # - type: event
+    #   agent: log_attack_agent
+    #   method: start
+    #   args: {}
 
       # Next 3 events sequentially stop collection for server, clients, and attackers
     - type: event
