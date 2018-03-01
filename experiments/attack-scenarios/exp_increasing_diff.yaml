@@ -3,27 +3,31 @@
 
 groups:
   attack_group: [attacknode-1, attacknode-2, attacknode-3, attacknode-4, attacknode-5,
-                attacknode-6, attacknode-7, attacknode-8, attacknode-9, attacknode-10]
+                attacknode-6]
+  # attack_group: [attacknode-1, attacknode-2, attacknode-3, attacknode-4, attacknode-5,
+  #               attacknode-6, attacknode-7, attacknode-8, attacknode-9, attacknode-10]
   server_group: &slist [servernode]
   client_group: [clientnode-1, clientnode-2, clientnode-3, clientnode-4, clientnode-5,
-                clientnode-6, clientnode-7, clientnode-8, clientnode-9, clientnode-10,
-                clientnode-11, clientnode-12, clientnode-13, clientnode-14, clientnode-15]
+                clientnode-6, clientnode-7, clientnode-8, clientnode-9]
+  # client_group: [clientnode-1, clientnode-2, clientnode-3, clientnode-4, clientnode-5,
+  #               clientnode-6, clientnode-7, clientnode-8, clientnode-9, clientnode-10,
+  #               clientnode-11, clientnode-12, clientnode-13, clientnode-14, clientnode-15]
 
 agents:
   # For running the main scripts on the server, clients, and attackers (the actual connection attempts
   # and sending/receiving of puzzles)
-  main_server_agent:
+  server_agent:
     group: server_group
     path: /share/magi/modules/apache/apache.tar.gz
     execargs: []
-  main_client_agent:
+  client_agent:
     group: client_group
     path: /share/magi/modules/http_client/http_client.tar.gz
     execargs: {servers: *slist, interval: 'expo(20)', sizes: '10000'}
 
   # nping for flood
   nping_agent:
-    group: ack_flood_group
+    group: attack_group
     path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
     execargs: []
 
@@ -60,7 +64,7 @@ agents:
     path: /share/magi/modules/tcpdump/tcpdump.tar.gz
     execargs: []
 
-  # MIGHT NEED AN AGENT FOR #5 ON LIST OF THINGS TO LOG
+  # WILL NEED AN AGENT FOR NEW KERNEL MODULE
 
 # The mapping from the AAL procedure to the experiment apparatus
 streamstarts: [serverstream, clientstream, attackstream, monitor, cleanupstream]
@@ -388,7 +392,7 @@ eventstreams:
       agent: dump_server_agent
       method: archiveDump
       trigger: serverDumped
-      args: { archivepath: /proj/ILLpuzzle/results/ }
+      args: { archivepath: /proj/ILLpuzzle/exp/happymedium/archive/ }
     - type: trigger
       triggers: [ {event: serverDumped} ]
 
@@ -396,7 +400,7 @@ eventstreams:
       agent: dump_client_agent
       method: archiveDump
       trigger: clientDumped
-      args: { archivepath: /proj/ILLpuzzle/results/ }
+      args: { archivepath: /proj/ILLpuzzle/exp/happymedium/archive/ }
     - type: trigger
       triggers: [ {event: clientDumped} ]
 
@@ -404,7 +408,7 @@ eventstreams:
       agent: dump_attack_agent
       trigger: allFilesArchived # Triggers the cleanup stream
       method: archiveDump
-      args: { archivepath: /proj/ILLpuzzle/results/ }
+      args: { archivepath: /proj/ILLpuzzle/exp/happymedium/archive/ }
 
   # 5. Exits
   cleanupstream:
