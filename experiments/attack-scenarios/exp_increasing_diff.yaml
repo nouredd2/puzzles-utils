@@ -14,14 +14,14 @@ agents:
   # and sending/receiving of puzzles)
   main_server_agent:
     group: server_group
-    path: /share/magi/modules/apache/apache.tar.gz # MIGHT BE WRONG
+    path: /share/magi/modules/apache/apache.tar.gz
     execargs: []
   main_client_agent:
     group: client_group
-    path: /share/magi/modules/http_client/http_client.tar.gz # ALSO MIGHT BE WRONG
+    path: /share/magi/modules/http_client/http_client.tar.gz
     execargs: {servers: *slist, interval: 'expo(20)', sizes: '10000'}
 
-  # nping for ack flood
+  # nping for flood
   nping_agent:
     group: ack_flood_group
     path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
@@ -29,7 +29,7 @@ agents:
 
   change_difficulty_agent:
     group: server_group
-    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz # custom agent for running a command line argument
+    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz # custom agent for running a command
     execargs: []
 
   # For running the Python scripts to log CPU load, memory load, and puzzles sent/received
@@ -80,7 +80,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 8" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 8" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -96,7 +96,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 9" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 9" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -107,7 +107,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 10" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 10" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -118,7 +118,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 11" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 11" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -129,7 +129,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 12" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 12" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -140,7 +140,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 13" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 13" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -151,7 +151,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 14" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 14" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -162,7 +162,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 15" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 15" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -173,7 +173,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 16" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 16" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -184,7 +184,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 17" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 17" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -195,7 +195,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 18" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 18" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -209,7 +209,7 @@ eventstreams:
     # Gets here after 16 minutes (after clientStopped triggers)
     - type: event
       agent: change_difficulty_agent
-      method: stop
+      method: stop # just for the daemon to know it's done; won't actually call a script because it's unnecessary
       args: {}
     - type: event
       agent: server_agent
@@ -253,7 +253,7 @@ eventstreams:
       agent: nping_agent
       method: setConfiguration
       trigger: attackStarted
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/run_ack_flood.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/run_nping.sh 500" }
 
     - type: event
       agent: nping_agent
@@ -267,14 +267,15 @@ eventstreams:
     - type: event
       agent: nping_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/kill_ack_flood.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/kill_nping.sh" }
 
-    # Starts the script that stops the ack flood
+    # Starts the script that kills nping
     - type: event
       agent: nping_agent
       method: start
       args: {}
 
+    # Technically unncessary but this can't hurt
     - type: event
       agent: nping_agent
       method: stop
@@ -340,10 +341,10 @@ eventstreams:
     - type: event
       agent: dump_client_agent
       method: archiveDump
-      trigger: attackerDumped
+      trigger: clientDumped
       args: { archivepath: /proj/ILLpuzzle/results/ }
     - type: trigger
-      triggers: [ {event: attackerDumped} ]
+      triggers: [ {event: clientDumped} ]
 
     - type: event
       agent: dump_attack_agent

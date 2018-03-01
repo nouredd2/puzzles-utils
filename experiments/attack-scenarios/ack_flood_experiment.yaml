@@ -13,7 +13,7 @@ agents:
 
   server_agent:
     group: server_group
-    path: /share/magi/modules/apache/apache.tar.gz 
+    path: /share/magi/modules/apache/apache.tar.gz
     execargs: []
 
   log_agent:
@@ -41,13 +41,13 @@ agents:
     path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
     execargs: []
 
-## The mapping from the AAL procedure to the experiment apparatus 
+## The mapping from the AAL procedure to the experiment apparatus
 streamstarts: [serverstream, clientstream, monitor, attackstream, sarstream]
 
 eventstreams:
   sarstream:
     - type: event
-      agent: sar_agent 
+      agent: sar_agent
       method: setConfiguration
       args: { cmdstring: "/proj/ILLpuzzle/scripts/run_sar.sh" }
 
@@ -81,7 +81,7 @@ eventstreams:
     - type: event
       agent: nping_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/run_ack_flood.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/run_nping.sh" }
 
     # attack starts after 2 minutes
     - type: trigger
@@ -99,7 +99,7 @@ eventstreams:
     # attack ends at the end of the simulation
     # - type: trigger
     #   triggers: [ { event: serverStopped } ]
-      
+
     - type: event
       agent: nping_agent
       method: setConfiguration
@@ -117,7 +117,7 @@ eventstreams:
 
   monitor:
     - type: event
-      agent: dump_agent 
+      agent: dump_agent
       method: startCollection
       args: { destination: "servernode", expression: "" }
 
@@ -130,17 +130,17 @@ eventstreams:
       agent: attack_log
       method: startCollection
       args: { destination: "servernode", expression: "" }
-  
+
     - type: trigger
-      triggers: [ { event: serverStopped } ] 
+      triggers: [ { event: serverStopped } ]
 
     - type: trigger
       triggers: [ { timeout: 1000 } ]
- 
+
     - type: event
       agent: dump_agent
       method: stopCollection
-      trigger: serverDumped 
+      trigger: serverDumped
       args: {}
 
     - type: trigger
@@ -149,9 +149,9 @@ eventstreams:
     - type: event
       agent: log_agent
       method: stopCollection
-      trigger: dumpStopped 
+      trigger: dumpStopped
       args: {}
-  
+
     - type: trigger
       triggers: [ {event: dumpStopped} ]
 
@@ -163,7 +163,7 @@ eventstreams:
 
     - type: trigger
       triggers: [ {event: adumpStopped} ]
-  
+
     - type: event
       agent: dump_agent
       method: archiveDump
@@ -188,28 +188,28 @@ eventstreams:
       method: archiveDump
       args: { archivepath: /proj/ILLpuzzle/results/ }
 
-  serverstream: 
+  serverstream:
     - type: event
-      agent: server_agent 
+      agent: server_agent
       method: startServer
-      trigger: serverStarted 
+      trigger: serverStarted
       args: {}
 
     - type: trigger
-      triggers: [ { event: clientStopped} ] 
+      triggers: [ { event: clientStopped} ]
 
     - type: event
-      agent: server_agent 
-      method: stopServer 
-      trigger: serverStopped 
-      args: {} 
+      agent: server_agent
+      method: stopServer
+      trigger: serverStopped
+      args: {}
 
-  clientstream:      
+  clientstream:
       - type: trigger
-        triggers: [ { event: serverStarted } ] 
+        triggers: [ { event: serverStarted } ]
 
       - type: event
-        agent: client_agent 
+        agent: client_agent
         method: startClient
         args: {}
 
@@ -219,10 +219,10 @@ eventstreams:
       - type: event
         agent: client_agent
         method: stopClient
-        trigger: clientStopped 
+        trigger: clientStopped
         args: {}
-      
+
 
   cleanupstream:
       - type: trigger
-        triggers: [ {event: filesCopied, target: exit} ] 
+        triggers: [ {event: filesCopied, target: exit} ]

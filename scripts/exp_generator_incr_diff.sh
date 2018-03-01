@@ -9,7 +9,7 @@ do
     OUT+="- type: event
         agent: change_difficulty_agent
         method: setConfiguration
-        args: { cmdstring: \"/proj/ILLpuzzle/scripts/set_difficulty.sh $difficulty\" }
+        args: { cmdstring: \"/proj/ILLpuzzle/scripts/set_difficulty.sh 2 $difficulty\" }
       - type: event
         agent: change_difficulty_agent
         method: start
