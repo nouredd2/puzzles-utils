@@ -37,18 +37,18 @@ agents:
     execargs: []
 
   # For running the Python scripts to log CPU load, memory load, and puzzles sent/received
-  # log_server_agent:
-  #   group: server_group
-  #   path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
-  #   execargs: []
-  # log_client_agent:
-  #   group: client_group
-  #   path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
-  #   execargs: []
-  # log_attack_agent:
-  #   group: attack_group
-  #   path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
-  #   execargs: []
+  log_server_agent:
+    group: server_group
+    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
+    execargs: []
+  log_client_agent:
+    group: client_group
+    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
+    execargs: []
+  log_attack_agent:
+    group: attack_group
+    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
+    execargs: []
 
   # For running tcpdump on the server, clients, and attackers
   dump_server_agent:
@@ -302,31 +302,31 @@ eventstreams:
       args: { destination: "attacknode-1", expression: "" }
 
       # Configure python logging scripts
-    # - type: event
-    #   agent: log_server_agent
-    #   method: setConfiguration
-    #   args: { cmdstring: "" } # NEED FILE PATH OF LOGGING SCRIPT
-    # - type: event
-    #   agent: log_client_agent
-    #   method: setConfiguration
-    #   args: { cmdstring: "" }
-    # - type: event
-    #   agent: log_attack_agent
-    #   method: setConfiguration
-    #   args: { cmdstring: "" }
-    #   # Actually runs the scripts
-    # - type: event
-    #   agent: log_server_agent
-    #   method: start
-    #   args: {}
-    # - type: event
-    #   agent: log_client_agent
-    #   method: start
-    #   args: {}
-    # - type: event
-    #   agent: log_attack_agent
-    #   method: start
-    #   args: {}
+    - type: event
+      agent: log_server_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/argus/run_argus.sh" }
+    - type: event
+      agent: log_client_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/argus/run_argus.sh" }
+    - type: event
+      agent: log_attack_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/argus/run_argus.sh" }
+      # Actually runs the scripts
+    - type: event
+      agent: log_server_agent
+      method: start
+      args: {}
+    - type: event
+      agent: log_client_agent
+      method: start
+      args: {}
+    - type: event
+      agent: log_attack_agent
+      method: start
+      args: {}
 
     - type: trigger
       triggers: [ { event: serverStopped } ]
@@ -336,31 +336,31 @@ eventstreams:
       triggers: [ { timeout: 2000 } ]
 
       # Kill python logging scripts
-    # - type: event
-    #   agent: log_server_agent
-    #   method: setConfiguration
-    #   args: { cmdstring: "" } # NEED FILE PATH OF LOGGING SCRIPT
-    # - type: event
-    #   agent: log_client_agent
-    #   method: setConfiguration
-    #   args: { cmdstring: "" }
-    # - type: event
-    #   agent: log_attack_agent
-    #   method: setConfiguration
-    #   args: { cmdstring: "" }
-    #   # Actually runs the script to kill the python loggin scripts
-    # - type: event
-    #   agent: log_server_agent
-    #   method: start
-    #   args: {}
-    # - type: event
-    #   agent: log_client_agent
-    #   method: start
-    #   args: {}
-    # - type: event
-    #   agent: log_attack_agent
-    #   method: start
-    #   args: {}
+    - type: event
+      agent: log_server_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/kill_argus.sh" }
+    - type: event
+      agent: log_client_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/kill_argus.sh" }
+    - type: event
+      agent: log_attack_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/kill_argus.sh" }
+      # Actually runs the script to kill the python logging scripts
+    - type: event
+      agent: log_server_agent
+      method: start
+      args: {}
+    - type: event
+      agent: log_client_agent
+      method: start
+      args: {}
+    - type: event
+      agent: log_attack_agent
+      method: start
+      args: {}
 
       # Next 3 events sequentially stop collection for server, clients, and attackers
     - type: event
@@ -392,7 +392,7 @@ eventstreams:
       agent: dump_server_agent
       method: archiveDump
       trigger: serverDumped
-      args: { archivepath: /proj/ILLpuzzle/exp/happymedium/archive/ }
+      args: { archivepath: /proj/ILLpuzzle/dumps/ }
     - type: trigger
       triggers: [ {event: serverDumped} ]
 
@@ -400,15 +400,15 @@ eventstreams:
       agent: dump_client_agent
       method: archiveDump
       trigger: clientDumped
-      args: { archivepath: /proj/ILLpuzzle/exp/happymedium/archive/ }
+      args: { archivepath: /proj/ILLpuzzle/dumps/ }
     - type: trigger
       triggers: [ {event: clientDumped} ]
 
     - type: event
       agent: dump_attack_agent
-      trigger: allFilesArchived # Triggers the cleanup stream
       method: archiveDump
-      args: { archivepath: /proj/ILLpuzzle/exp/happymedium/archive/ }
+      trigger: allFilesArchived # Triggers the cleanup stream
+      args: { archivepath: /proj/ILLpuzzle/dumps/ }
 
   # 5. Exits
   cleanupstream:
