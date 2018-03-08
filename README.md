@@ -18,7 +18,12 @@ Launch an experiment scenario and collect its results
   @experiment_name (Optional): The name of the DETER experiment that is swapped-in and to be used. Default is "oak"
 ```
 
-For example, using `./run_experiment.sh exp1.yaml -exp1 myexp` will launch the scenario defined in `exp1.yaml` using DETER's `magi` orchestrator.
+For example, using 
+```
+./run_experiment.sh exp1.yaml -exp1 myexp
+``` 
+will launch the scenario defined in `exp1.yaml` using DETER's `magi` orchestrator.
 It will collect the `pcap` files generated in the directory `/proj/ILLpuzzle/results` and produce a tarball name `results-exp1.tar.gz`.
+
 At this moment, this script only looks for `pcap` files, though it is easy to supplement it with the ability to tar other results files. Additionally, 
 the file will provide you with the option to cleanup the results directory before launching the scenario to avoid packaging differenet scenario files together. 
