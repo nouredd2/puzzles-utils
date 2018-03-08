@@ -64,7 +64,11 @@ agents:
     path: /share/magi/modules/tcpdump/tcpdump.tar.gz
     execargs: []
 
-  # WILL NEED AN AGENT FOR NEW KERNEL MODULE
+  # For running the kernel module to log the size of the TCP socket's listen/accept queues
+  argus_module_agent:
+    group: server_group
+    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
+    execargs: []
 
 # The mapping from the AAL procedure to the experiment apparatus
 streamstarts: [serverstream, clientstream, attackstream, monitor, cleanupstream]
@@ -301,19 +305,29 @@ eventstreams:
       method: startCollection
       args: { destination: "attacknode-1", expression: "" }
 
+      # Starts the kernel module for logging size of listen/accept queues
+    - type: event
+      agent: argus_module_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/argus/run_argus_module.sh" }
+    - type: event
+      agent: argus_module_agent
+      method: start
+      args: {}
+
       # Configure python logging scripts
     - type: event
       agent: log_server_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/argus/run_argus.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/argus/run_argus_daemon.sh" }
     - type: event
       agent: log_client_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/argus/run_argus.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/argus/run_argus_daemon.sh" }
     - type: event
       agent: log_attack_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/argus/run_argus.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/argus/run_argus_daemon.sh" }
       # Actually runs the scripts
     - type: event
       agent: log_server_agent
@@ -335,19 +349,29 @@ eventstreams:
     - type: trigger
       triggers: [ { timeout: 2000 } ]
 
+      # Runs script to kill the kernel module
+    - type: event
+      agent: argus_module_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/argus/kill_argus_module.sh" }
+    - type: event
+      agent: argus_module_agent
+      method: start
+      args: {}
+
       # Kill python logging scripts
     - type: event
       agent: log_server_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/kill_argus.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/kill_argus_daemon.sh" }
     - type: event
       agent: log_client_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/kill_argus.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/kill_argus_daemon.sh" }
     - type: event
       agent: log_attack_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/kill_argus.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/scripts/kill_argus_daemon.sh" }
       # Actually runs the script to kill the python logging scripts
     - type: event
       agent: log_server_agent
