@@ -39,14 +39,14 @@ set -x
 cd /proj/ILLpuzzle/results
 for (( i = 1; i < 10; i++ )); do
   scp clientnode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus.out .
-  mv argus.out argusout/clientnode-$i-argus.out
+  mv argus.out argusout/clientnode$i.out
 done
 for (( i = 1; i < 7; i++ )); do
   scp attacknode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus.out .
-  mv argus.out argusout/attacknode-$i-argus.out
+  mv argus.out argusout/attacknode$i.out
 done
 scp servernode.$EXP.$PROJ.isi.deterlab.net:/tmp/argus.out .
-mv argus.out argusout/servernode-argus.out
+mv argus.out argusout/servernode.out
 
 # Tar the tcpdump cap files, argus daemon output files, and argus module output together
 sleep 10
