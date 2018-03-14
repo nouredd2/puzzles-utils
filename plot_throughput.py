@@ -43,7 +43,7 @@ if __name__ == '__main__':
     hosts = np.array([])
     for host in hostnames:
         if host not in hostToIp:
-            print "Hostname %s not found in file experiment.conf" % host
+            print "Hostname %s not found in file experiment_conf/experiment.conf" % host
             sys.exit()
         hosts = np.append(hosts, hostToIp[host])
 
