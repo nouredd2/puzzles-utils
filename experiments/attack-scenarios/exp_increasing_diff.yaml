@@ -416,7 +416,7 @@ eventstreams:
       agent: dump_server_agent
       method: archiveDump
       trigger: serverDumped
-      args: { archivepath: /proj/ILLpuzzle/dumps/ }
+      args: { archivepath: /proj/ILLpuzzle/results/ }
     - type: trigger
       triggers: [ {event: serverDumped} ]
 
@@ -424,7 +424,7 @@ eventstreams:
       agent: dump_client_agent
       method: archiveDump
       trigger: clientDumped
-      args: { archivepath: /proj/ILLpuzzle/dumps/ }
+      args: { archivepath: /proj/ILLpuzzle/results/ }
     - type: trigger
       triggers: [ {event: clientDumped} ]
 
@@ -432,7 +432,7 @@ eventstreams:
       agent: dump_attack_agent
       method: archiveDump
       trigger: allFilesArchived # Triggers the cleanup stream
-      args: { archivepath: /proj/ILLpuzzle/dumps/ }
+      args: { archivepath: /proj/ILLpuzzle/results/ }
 
   # 5. Exits
   cleanupstream:
