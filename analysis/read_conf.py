@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 
-def ReadHosts(expFile='experiment_conf/experiment.conf'):
+def ReadHosts(expFile='../experiment_conf/experiment.conf'):
     with open(expFile) as f:
         content = f.readlines()
 
