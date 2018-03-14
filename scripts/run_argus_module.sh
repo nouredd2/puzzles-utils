@@ -1,5 +1,9 @@
 #!/bin/sh
 
+cd /proj/ILLpuzzle/modules/argus
+make
+sudo insmod pmonitor.ko
+
  # Extracts the process id from whatever is using port 80
 lines=$(sudo ss -lptn | grep :80)
 processes=$(echo $lines | tr "," "\n")
