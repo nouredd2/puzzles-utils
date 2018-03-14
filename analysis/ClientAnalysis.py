@@ -21,7 +21,7 @@ def ip_to_str(address):
     return socket.inet_ntop(socket.AF_INET, address)
 
 
-def ca_print(message, verbose):
+def ANPrint(message, verbose):
     if verbose:
         print message
 
@@ -104,15 +104,15 @@ def fill_connections(pz_cap, verbose=False, target_ips=set()):
                 else:
                     # account for out of order recording
                     # issue warning only one
-                    ca_print("[WARNING:] Packets in cap file are out of order.", not warned)
+                    ANPrint("[WARNING:] Packets in cap file are out of order.", not warned)
                     warned = True
 
                     conn = TCPConnection(dst, tcp.ack-1, 0, tcp.dport)
                     conn.synack_received = ts
                     timing[dst][tcp.ack-1] = conn
             else:
-                ca_print("[WARNING:] Received SYNACK packet for non tracked host %s" % dst, verbose)
-                ca_print("           Packet at received at time %lf" % ts, verbose)
+                ANPrint("[WARNING:] Received SYNACK packet for non tracked host %s" % dst, verbose)
+                ANPrint("           Packet at received at time %lf" % ts, verbose)
 
         # Client response
         if (not (tcp.flags & SYN)) and (tcp.flags & ACK) and (not tcp.flags & FIN):
@@ -136,7 +136,7 @@ def fill_connections(pz_cap, verbose=False, target_ips=set()):
                     # handle out of order cap file
                     # NOTE: THIS WORKS FOR ATTACKERS BECAUSE THERE ARE NO APPLICATIONS BUT NOT GOOD CLIENTS
                     # THIS DOES NOT WORK.
-                    ca_print("[WARNING:] Packets in cap file are out of order.", not warned)
+                    ANPrint("[WARNING:] Packets in cap file are out of order.", not warned)
                     warned = True
 
                     conn = TCPConnection(src, tcp.seq - 1, 0, tcp.sport)
@@ -157,8 +157,8 @@ def fill_connections(pz_cap, verbose=False, target_ips=set()):
                     print "[WARNING:] Packet for (%s,%d) does not have a record for expected sequence number. " \
                             "This indicates that the SYN packet was not yet sent." %(dst, tcp.dport)
                 elif tcp.seq in expected_seq_num[(dst, tcp.dport)]:
-                    ca_print("[Log:] Server reset connection after ACK establishment for host %s" % dst, verbose)
-                    ca_print("       At port number %d with expected sequence number %d" % (tcp.dport, tcp.seq), verbose)
+                    ANPrint("[Log:] Server reset connection after ACK establishment for host %s" % dst, verbose)
+                    ANPrint("       At port number %d with expected sequence number %d" % (tcp.dport, tcp.seq), verbose)
                     conn = expected_seq_num[(dst, tcp.dport)][tcp.seq]
                     conn.SetResetFlag(ts)
                 else:
@@ -181,7 +181,7 @@ def fill_connections(pz_cap, verbose=False, target_ips=set()):
                 #     ANPrint("[WARNING:] Port %d have been reused. Results cannot be trusted!" % port, verbose)
 
             else:
-                ca_print("[WARNING:] Received RST packet for non tracked host %s" % dst, verbose)
+                ANPrint("[WARNING:] Received RST packet for non tracked host %s" % dst, verbose)
 
     return timing
 
@@ -206,7 +206,7 @@ def compute_client_percentage(pcap_file, interval_s, verbose=False, target_ips=s
     f = open(pcap_file)
     rcap = dpkt.pcap.Reader(f)
     end_time = time.time()
-    ca_print("Time to read pcap file " + str(end_time - start_time), verbose)
+    ANPrint("Time to read pcap file " + str(end_time - start_time), verbose)
 
     timing = fill_connections(rcap, verbose, target_ips)
 
