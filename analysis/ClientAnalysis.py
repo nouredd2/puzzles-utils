@@ -21,11 +21,6 @@ def ip_to_str(address):
     return socket.inet_ntop(socket.AF_INET, address)
 
 
-def ANPrint(message, verbose):
-    if verbose:
-        print message
-
-
 def fill_connections(pz_cap, verbose=False, target_ips=set()):
     """
     In this case, I will treat retransmissions as separate connection
@@ -104,15 +99,15 @@ def fill_connections(pz_cap, verbose=False, target_ips=set()):
                 else:
                     # account for out of order recording
                     # issue warning only one
-                    ANPrint("[WARNING:] Packets in cap file are out of order.", not warned)
+                    if not warned: print("[WARNING:] Packets in cap file are out of order.")
                     warned = True
 
                     conn = TCPConnection(dst, tcp.ack-1, 0, tcp.dport)
                     conn.synack_received = ts
                     timing[dst][tcp.ack-1] = conn
             else:
-                ANPrint("[WARNING:] Received SYNACK packet for non tracked host %s" % dst, verbose)
-                ANPrint("           Packet at received at time %lf" % ts, verbose)
+                if verbose: print("[WARNING:] Received SYNACK packet for non tracked host %s" % dst)
+                if verbose: print("           Packet at received at time %lf" % ts)
 
         # Client response
         if (not (tcp.flags & SYN)) and (tcp.flags & ACK) and (not tcp.flags & FIN):
@@ -136,7 +131,7 @@ def fill_connections(pz_cap, verbose=False, target_ips=set()):
                     # handle out of order cap file
                     # NOTE: THIS WORKS FOR ATTACKERS BECAUSE THERE ARE NO APPLICATIONS BUT NOT GOOD CLIENTS
                     # THIS DOES NOT WORK.
-                    ANPrint("[WARNING:] Packets in cap file are out of order.", not warned)
+                    if not warned: print("[WARNING:] Packets in cap file are out of order.")
                     warned = True
 
                     conn = TCPConnection(src, tcp.seq - 1, 0, tcp.sport)
@@ -157,8 +152,8 @@ def fill_connections(pz_cap, verbose=False, target_ips=set()):
                     print "[WARNING:] Packet for (%s,%d) does not have a record for expected sequence number. " \
                             "This indicates that the SYN packet was not yet sent." %(dst, tcp.dport)
                 elif tcp.seq in expected_seq_num[(dst, tcp.dport)]:
-                    ANPrint("[Log:] Server reset connection after ACK establishment for host %s" % dst, verbose)
-                    ANPrint("       At port number %d with expected sequence number %d" % (tcp.dport, tcp.seq), verbose)
+                    if verbose: print("[Log:] Server reset connection after ACK establishment for host %s" % dst)
+                    if verbose: print("       At port number %d with expected sequence number %d" % (tcp.dport, tcp.seq))
                     conn = expected_seq_num[(dst, tcp.dport)][tcp.seq]
                     conn.SetResetFlag(ts)
                 else:
@@ -178,16 +173,15 @@ def fill_connections(pz_cap, verbose=False, target_ips=set()):
                 #         reused = reused + 1
                 #
                 # if reused > 1:
-                #     ANPrint("[WARNING:] Port %d have been reused. Results cannot be trusted!" % port, verbose)
+                #     if verbose: print("[WARNING:] Port %d have been reused. Results cannot be trusted!" % port)
 
             else:
-                ANPrint("[WARNING:] Received RST packet for non tracked host %s" % dst, verbose)
+                if verbose: print("[WARNING:] Received RST packet for non tracked host %s" % dst)
 
     return timing
 
 
 def get_col(arr, col):
-    # Source: https://stackoverflow.com/questions/903853/how-do-you-extract-a-column-from-a-multi-dimensional-array
     m = map(lambda x: x[col], arr)
     return np.array(m, dtype=np.float)
 
@@ -206,7 +200,7 @@ def compute_client_percentage(pcap_file, interval_s, verbose=False, target_ips=s
     f = open(pcap_file)
     rcap = dpkt.pcap.Reader(f)
     end_time = time.time()
-    ANPrint("Time to read pcap file " + str(end_time - start_time), verbose)
+    if verbose: print("Time to read pcap file " + str(end_time - start_time))
 
     timing = fill_connections(rcap, verbose, target_ips)
 
