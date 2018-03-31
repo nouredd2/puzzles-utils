@@ -1,12 +1,11 @@
 #!/usr/bin/python
-
 import matplotlib.pyplot as plt
 import argparse
 import time
 from matplotlib.backends.backend_pdf import PdfPages
-from analyze import compute_global_throughput
+from parsing.analyze import compute_global_throughput
 import numpy as np
-from read_conf import read_exp_config
+from parsing.read_conf import read_exp_config
 import sys
 
 

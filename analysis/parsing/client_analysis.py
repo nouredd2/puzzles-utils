@@ -5,7 +5,7 @@ import time
 import dpkt
 import operator
 import logging
-from utils import ip_to_str, get_col, DuplicateFilter
+from utils.utils import ip_to_str, get_col, DuplicateFilter
 from connection import TCPConnection
 
 FIN = 0x01
