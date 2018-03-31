@@ -14,18 +14,18 @@ class TCPConnection:
         self.syn_retransmissions = np.empty(0)
         self.isRetransmitted = False
 
-    def IsDroppedByServer(self):
+    def isDroppedByServer(self):
         return self.isDroppedByDst
 
-    def SetResetFlag(self, _ts):
+    def setResetFlag(self, _ts):
         self.rst_received = _ts
         self.isDroppedByDst = True
 
-    def IsRetransmitted(self):
+    def isRetransmitted(self):
         self.isRetransmitted = np.size(self.syn_retransmissions) > 0
         return self.isRetransmitted
 
-    def GetNumberOfRetransmissions(self):
+    def getNumberOfRetransmissions(self):
         return np.size(self.syn_retransmissions)
 
 

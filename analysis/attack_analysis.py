@@ -160,7 +160,7 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
                     ANPrint("[Log:] Server reset connection after ACK establishment for host %s" % dst, verbose)
                     ANPrint("       At port number %d with expected sequence number %d" % (tcp.dport, tcp.seq), verbose)
                     conn = expected_seq_num[(dst, tcp.dport)][tcp.seq]
-                    conn.SetResetFlag(ts)
+                    conn.setResetFlag(ts)
                 else:
                     if not rst_warned:
                         print "[WARNING:] Received RST packet for a non tracked connection at host %s at ts %lf. " \
@@ -174,7 +174,7 @@ def populate_connections(pz_cap, verbose=False, target_ips=set()):
                 #     conn = timing[dst][seq]
                 #     if conn.sport == port:
                 #         # found it
-                #         conn.SetResetFlag(ts)
+                #         conn.setResetFlag(ts)
                 #         reused = reused + 1
                 #
                 # if reused > 1:
