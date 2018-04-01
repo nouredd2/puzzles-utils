@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 import argparse
 import time
 from matplotlib.backends.backend_pdf import PdfPages
-from parsing.analyze import compute_global_throughput
+from parsing.legacy_analyze import compute_global_throughput
 import numpy as np
-from parsing.read_conf import read_exp_config
+from utils.read_conf import read_exp_config
 import sys
 
 

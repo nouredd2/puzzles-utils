@@ -68,7 +68,7 @@ def plot_histogram(_data, _num_bins, _outfile):
     plt.close()
 
 
-def compute_throughput(fname, host, interval, switch):
+def compute_throughput(fname, host, interval, should_switch):
     start_time = time.time()
     f = open(fname)
     rcap = dpkt.pcap.Reader(f)
@@ -99,7 +99,7 @@ def compute_throughput(fname, host, interval, switch):
             continue
 
         iptocheck = ip.dst
-        if (switch):
+        if should_switch:
             iptocheck = ip.src
 
         if ip_to_str(iptocheck) != host:

@@ -2,9 +2,9 @@
 import matplotlib.pyplot as plt
 import argparse
 from matplotlib.backends.backend_pdf import PdfPages
-from parsing.analyze import compute_throughput
+from parsing.legacy_analyze import compute_throughput
 import numpy as np
-from parsing.read_conf import read_exp_config
+from utils.read_conf import read_exp_config
 import sys
 
 
