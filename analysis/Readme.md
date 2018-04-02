@@ -6,6 +6,6 @@ The code base contains three directories:
 * [`utils`](./utils/): This directory contains various util methods needed by the code base.
 
 ## TODO
-- Check the [legacy file](./parsing/legacy_analysis.py) for what is needed to move it to a more meaningful file.
+- ~Check the [legacy file](./parsing/legacy_analysis.py) for what is needed to move it to a more meaningful file.~
 - Refactor the plotting scripts to single out what is useful and what is not.
 - Add new scripts for parsing and plotting the new data format (from the Argus module and daemon).

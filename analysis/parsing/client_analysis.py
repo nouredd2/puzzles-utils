@@ -126,3 +126,98 @@ def compute_client_percentage(pcap_file, interval_s, verbose=False, target_ips=s
     logger_set_log_level(logger, current_log_level)
 
     return client_percentage_connections
+
+
+def compute_connection_time(pcap_file, verbose=False, ignore_retrans=False):
+    """
+    Compute the observed connection time, number of retransmissions, number of dropped
+        connections, and number of incomplete connections seen by every host given an input
+        pcap file to be parsed using dpkt.
+
+    @pcap_file: The input pcap file containing the packet information
+    @verbose: The level of verbosity for this function
+    @ignore_retrans: Flag whether to ignore retransmissions or include them in the computation.
+
+    @returns four dictionaries, each containing a map from the host to its observed connection
+        parameters, name, connection establishment time, number of retransmission, number of
+        dropped connection, and number of incomplete connection.
+    """
+
+    # check what level of warnings we should use
+    current_log_level = logger.getEffectiveLevel()
+    if verbose: logger_set_log_level(logger, logging.DEBUG)
+
+    # Read the pcap file and then call the fill connections routine to obtain a classification
+    # of the client (or all clients)' TCP connections observed in the file
+    start_time = time.time()
+    f = open(pcap_file)
+    rcap = dpkt.pcap.Reader(f)
+    end_time = time.time()
+    logger.debug("Time to read pcap file {}".format(str(end_time-start_time)))
+
+    timing = fill_connections(rcap, verbose)
+
+    connection_time = {}
+    retransmission_count = {}
+    dropped_count = {}
+    incomplete_connections = {}
+    num_connections = 0
+    # Compute connection time (time between first SYN and first ACK)
+    # Number of unanswered SYN (count retransmissions)
+    for host in timing.iterkeys():
+        # do this to reduce lookup time
+        connection_time[host] = []
+        retransmission_count[host] = 0
+        dropped_count[host] = []
+        incomplete_connections[host] = 0
+        for seq in timing[host].iterkeys():
+            conn = timing[host][seq]
+            if conn.isRetransmitted():
+                retransmission_count[host] = retransmission_count[host] + conn.getNumberOfRetransmissions()
+
+                # count retransmission in completed connections.
+                if conn.ack_sent > 0:
+                    if not ignore_retrans:
+                        connection_time[host].append(conn.ack_sent - conn.syn_sent)
+                else:
+                    incomplete_connections[host] = incomplete_connections[host] + 1
+
+            elif conn.isDroppedByServer():
+                dropped_count[host].append(conn.rst_received)
+            else:
+                # normal connection completion
+                if conn.ack_sent > 0:
+                    connection_time[host].append(conn.ack_sent - conn.syn_sent)
+                else:
+                    logger.warning("Found an incompleted connection at time {}".format(conn.syn_sent))
+
+            num_connections = num_connections + 1
+
+        host_stat_log = """{:38}\t{}
+            {:38}\t{}
+            {:38}\t{}
+            {:38}\t{}
+            {:38}\t{}
+            {:38}\t{}
+            {:38}\t{}
+            {:38}\t{}
+            {:38}\t{}
+            {:38}\t{}""".format('Statistics for host:', host,
+                                'Total number of attempted connections:', len(timing[host]),
+                                'Total number of completed connections:', len(connection_time[host]),
+                                'Total number of retransmission:', retransmission_count[host],
+                                'Total number of dropped connections', len(dropped_count[host]),
+                                'Total number of incomplete connections:', incomplete_connections[host],
+                                'Maximum connection time:', np.max(connection_time[host]),
+                                'Minimum connection time:', np.min(connection_time[host]),
+                                'Average connection time:', np.average(connection_time[host]),
+                                'Standard deviation:', np.std(connection_time[host]))
+
+        logger.info("+" + '-'*50 + "+")
+        logger.info(host_stat_log)
+        logger.info("+" + '-'*50 + "+")
+
+    # reset the logger config
+    logger_set_log_level(logger, current_log_level)
+
+    return connection_time, retransmission_count, dropped_count, incomplete_connections
