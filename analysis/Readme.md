@@ -1,6 +1,7 @@
 # Experiment Analysis Scripts
 
 The code base contains three directories:
+* [`archive`](./archive/): This directory contains legacy notebooks that contains further analysis and plotting scripts. 
 * [`parsing`](./parsing/): This directory contains all of the code for parsing the pcap files and generating the approriate dictionaries.
 * [`plotting`](./plotting/): This directory contains all of the code using for plotting various properties about the data.
 * [`utils`](./utils/): This directory contains various util methods needed by the code base.
