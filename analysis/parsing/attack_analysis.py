@@ -100,7 +100,8 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False, timing=None):
 
         attack_rates[host] = effective_rate
 
-        attacker_stat_log = """{:38}\t{}
+        attacker_stat_log = """
+        {:38}\t{}
         {:38}\t{}
         {:38}\t{}
         {:38}\t{}
@@ -112,8 +113,7 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False, timing=None):
                             'Total number of replies received', num_synacked,
                             'Average ACK rate:', np.average(effective_rate) / interval_s)
 
-        logger.info("+" + '-'*50 + "+")
-        logger.info(attacker_stat_log)
+        logger.info("+" + '-'*50 + "+" + attacker_stat_log)
         logger.info("+" + '-'*50 + "+")
 
     # reset the logger config
@@ -198,7 +198,8 @@ def compute_sending_rate(pcap_file, interval_s, host, verbose=False):
 
         num_packets += 1
 
-    attacker_stat_log = """{:38}\t{}
+    attacker_stat_log = """
+    {:38}\t{}
     {:38}\t{}
     {:38}\t{}
     {:38}\t{}""".format('Statistics for host:', host,
@@ -206,8 +207,7 @@ def compute_sending_rate(pcap_file, interval_s, host, verbose=False):
                         'Average SYN rate:', np.average(sending_rate) / interval_s,
                         'Number of buckets computed:', np.size(sending_rate))
 
-    logger.info("+" + '-'*50 + "+")
-    logger.info(attacker_stat_log)
+    logger.info("+" + '-'*50 + "+" + attacker_stat_log)
     logger.info("+" + '-'*50 + "+")
 
     # reset the logger config

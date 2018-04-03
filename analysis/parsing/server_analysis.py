@@ -139,7 +139,8 @@ def compute_all_rates(pcap_file, interval_s, target_ips, verbose=0, timing=None)
         syn_rates[host] = sending_rate
         connection_rates[host] = establishment_rate
 
-        attacker_stat_log = """{:38}\t{}
+        attacker_stat_log = """
+        {:38}\t{}
         {:38}\t{}
         {:38}\t{}
         {:38}\t{}
@@ -154,8 +155,7 @@ def compute_all_rates(pcap_file, interval_s, target_ips, verbose=0, timing=None)
                             'Average ACK rate seen by server:', np.average(establishment_rate) / interval_s)
 
         # debug because we don't want to do this for every possible ip address
-        logger.debug("+" + '-'*50 + "+")
-        logger.debug(attacker_stat_log)
+        logger.debug("+" + '-'*50 + "+" + attacker_stat_log)
         logger.debug("+" + '-'*50 + "+")
 
     end_time = time.time()

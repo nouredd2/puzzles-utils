@@ -110,7 +110,8 @@ def compute_client_percentage(pcap_file, interval_s, verbose=False, target_ips=s
         client_percentage_connections[host] = arr_percentage
         avg_estab_rate = np.average(get_col(arr_percentage, 1) / get_col(arr_percentage, 0))
 
-        host_stat_log = """{:38}\t{}
+        host_stat_log = """
+        {:38}\t{}
         {:38}\t{}
         {:38}\t{}
         {:38}\t{}
@@ -122,8 +123,7 @@ def compute_client_percentage(pcap_file, interval_s, verbose=False, target_ips=s
                             'Total number of replies received', num_synacked,
                             'Average establishment rate:', avg_estab_rate)
 
-        logger.info("+" + '-'*50 + "+")
-        logger.info(host_stat_log)
+        logger.info("+" + '-'*50 + "+" + host_stat_log)
         logger.info("+" + '-'*50 + "+")
 
     # reset the logger config
@@ -200,28 +200,28 @@ def compute_connection_time(pcap_file, verbose=False, ignore_retrans=False, timi
 
             num_connections = num_connections + 1
 
-        host_stat_log = """{:38}\t{}
-            {:38}\t{}
-            {:38}\t{}
-            {:38}\t{}
-            {:38}\t{}
-            {:38}\t{}
-            {:38}\t{}
-            {:38}\t{}
-            {:38}\t{}
-            {:38}\t{}""".format('Statistics for host:', host,
-                                'Total number of attempted connections:', len(timing[host]),
-                                'Total number of completed connections:', len(connection_time[host]),
-                                'Total number of retransmission:', retransmission_count[host],
-                                'Total number of dropped connections', len(dropped_count[host]),
-                                'Total number of incomplete connections:', incomplete_connections[host],
-                                'Maximum connection time:', np.max(connection_time[host]),
-                                'Minimum connection time:', np.min(connection_time[host]),
-                                'Average connection time:', np.average(connection_time[host]),
-                                'Standard deviation:', np.std(connection_time[host]))
+        host_stat_log = """
+        {:38}\t{}
+        {:38}\t{}
+        {:38}\t{}
+        {:38}\t{}
+        {:38}\t{}
+        {:38}\t{}
+        {:38}\t{}
+        {:38}\t{}
+        {:38}\t{}
+        {:38}\t{}""".format('Statistics for host:', host,
+                            'Total number of attempted connections:', len(timing[host]),
+                            'Total number of completed connections:', len(connection_time[host]),
+                            'Total number of retransmission:', retransmission_count[host],
+                            'Total number of dropped connections', len(dropped_count[host]),
+                            'Total number of incomplete connections:', incomplete_connections[host],
+                            'Maximum connection time:', np.max(connection_time[host]),
+                            'Minimum connection time:', np.min(connection_time[host]),
+                            'Average connection time:', np.average(connection_time[host]),
+                            'Standard deviation:', np.std(connection_time[host]))
 
-        logger.info("+" + '-'*50 + "+")
-        logger.info(host_stat_log)
+        logger.info("+" + '-'*50 + "+" + host_stat_log)
         logger.info("+" + '-'*50 + "+")
 
     # reset the logger config
