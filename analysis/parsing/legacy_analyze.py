@@ -343,7 +343,7 @@ def parse_file(fname, ignore_retrans=False):
                     conn = timing[dst][seq]
                     if conn.sport == port:
                         # found it
-                        conn.setResetFlag(ts)
+                        conn.set_reset_flag(ts)
                         reused = reused + 1
 
                 if reused > 1:
@@ -368,8 +368,8 @@ def parse_file(fname, ignore_retrans=False):
         incomplete_connections[host] = 0
         for seq in timing[host].iterkeys():
             conn = timing[host][seq]
-            if conn.isRetransmitted():
-                retransmission_count[host] = retransmission_count[host] + conn.getNumberOfRetransmissions()
+            if conn.is_retransmitted():
+                retransmission_count[host] = retransmission_count[host] + conn.get_num_retransmissions()
 
                 # count retransmission in completed connections.
                 if conn.ack_sent > 0:
@@ -378,7 +378,7 @@ def parse_file(fname, ignore_retrans=False):
                 else:
                     incomplete_connections[host] = incomplete_connections[host] + 1
 
-            elif conn.isDroppedByServer():
+            elif conn.is_dropped_by_server():
                 dropped_count[host].append(conn.rst_received)
             else:
                 # normal connection completion

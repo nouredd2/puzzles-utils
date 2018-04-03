@@ -34,15 +34,15 @@ def compute_client_percentage(pcap_file, interval_s, verbose=False, target_ips=s
 
     # Read the pcap file and then call the fill connections routine to obtain a classification
     # of the client (or all clients)' TCP connections observed in the file
-    start_time = time.time()
-    f = open(pcap_file)
-    rcap = dpkt.pcap.Reader(f)
-    end_time = time.time()
-    logger.debug("Time to read pcap file {}".format(str(end_time-start_time)))
-
     # check if the dictionary has already been computed
     if timing is None:
+        start_time = time.time()
+        f = open(pcap_file)
+        rcap = dpkt.pcap.Reader(f)
         timing = fill_connections(rcap, verbose, target_ips)
+        end_time = time.time()
+
+        logger.debug("Time to read pcap file {}".format(str(end_time-start_time)))
 
     client_percentage_connections = {}
     for host, conn_dict in timing.items():
@@ -155,14 +155,14 @@ def compute_connection_time(pcap_file, verbose=False, ignore_retrans=False, timi
 
     # Read the pcap file and then call the fill connections routine to obtain a classification
     # of the client (or all clients)' TCP connections observed in the file
-    start_time = time.time()
-    f = open(pcap_file)
-    rcap = dpkt.pcap.Reader(f)
-    end_time = time.time()
-    logger.debug("Time to read pcap file {}".format(str(end_time-start_time)))
-
     if timing is None:
+        start_time = time.time()
+        f = open(pcap_file)
+        rcap = dpkt.pcap.Reader(f)
         timing = fill_connections(rcap, verbose)
+        end_time = time.time()
+
+        logger.debug("Time to read pcap file {}".format(str(end_time-start_time)))
 
     connection_time = {}
     retransmission_count = {}
@@ -179,8 +179,8 @@ def compute_connection_time(pcap_file, verbose=False, ignore_retrans=False, timi
         incomplete_connections[host] = 0
         for seq in timing[host].iterkeys():
             conn = timing[host][seq]
-            if conn.isRetransmitted():
-                retransmission_count[host] = retransmission_count[host] + conn.getNumberOfRetransmissions()
+            if conn.is_retransmitted():
+                retransmission_count[host] = retransmission_count[host] + conn.get_num_retransmissions()
 
                 # count retransmission in completed connections.
                 if conn.ack_sent > 0:
@@ -189,7 +189,7 @@ def compute_connection_time(pcap_file, verbose=False, ignore_retrans=False, timi
                 else:
                     incomplete_connections[host] = incomplete_connections[host] + 1
 
-            elif conn.isDroppedByServer():
+            elif conn.is_dropped_by_server():
                 dropped_count[host].append(conn.rst_received)
             else:
                 # normal connection completion

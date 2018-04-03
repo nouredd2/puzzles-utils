@@ -29,14 +29,14 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False, timing=None):
     current_log_level = logger.getEffectiveLevel()
     if verbose: logger_set_log_level(logger, logging.DEBUG)
 
-    start_time = time.time()
-    f = open(pcap_file)
-    rcap = dpkt.pcap.Reader(f)
-    end_time = time.time()
-    logger.debug("Time to read pcap file " + str(end_time - start_time))
-
     if timing is None:
+        start_time = time.time()
+        f = open(pcap_file)
+        rcap = dpkt.pcap.Reader(f)
         timing = fill_connections(rcap, verbose)
+        end_time = time.time()
+
+        logger.debug("Time to read pcap file " + str(end_time - start_time))
 
     attack_rates = {}
     for host, conn_dict in timing.items():

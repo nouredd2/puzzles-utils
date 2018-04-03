@@ -20,18 +20,18 @@ class TCPConnection:
         self.syn_retransmissions = np.empty(0)
         self.isRetransmitted = False
 
-    def isDroppedByServer(self):
+    def is_dropped_by_server(self):
         return self.isDroppedByDst
 
-    def setResetFlag(self, _ts):
+    def set_reset_flag(self, _ts):
         self.rst_received = _ts
         self.isDroppedByDst = True
 
-    def isRetransmitted(self):
+    def is_retransmitted(self):
         self.isRetransmitted = np.size(self.syn_retransmissions) > 0
         return self.isRetransmitted
 
-    def getNumberOfRetransmissions(self):
+    def get_num_retransmissions(self):
         return np.size(self.syn_retransmissions)
 
 
@@ -187,7 +187,7 @@ def fill_connections(pz_cap, verbose=False, target_ips=set()):
                     logger.debug("""Server reset connection after ACK establishment for host {}
                         At port number {} with expected sequence number {}""".format(dst, tcp.dport, tcp.seq))
                     conn = expected_seq_num[(dst, tcp.dport)][tcp.seq]
-                    conn.setResetFlag(ts)
+                    conn.set_reset_flag(ts)
                 else:
                     logger.warning("""Received RST packet for a non tracked connection at host {}.
                         This message will be printed once per host""".format(dst))

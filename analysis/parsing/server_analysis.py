@@ -32,16 +32,16 @@ def compute_all_rates(pcap_file, interval_s, target_ips, verbose=0, timing=None)
     current_log_level = logger.getEffectiveLevel()
     if verbose: logger_set_log_level(logger, logging.DEBUG)
 
-    start_time = time.time()
-    f = open(pcap_file)
-    rcap = dpkt.pcap.Reader(f)
-    end_time = time.time()
-    logger.debug("Time to read pcap file " + str(end_time - start_time))
-
-    start_time = time.time()
     if timing is None:
+        start_time = time.time()
+        f = open(pcap_file)
+        rcap = dpkt.pcap.Reader(f)
         timing = fill_connections(rcap, verbose == 2, target_ips)
+        end_time = time.time()
 
+        logger.debug("Time to read pcap file " + str(end_time - start_time))
+
+    start_time = time.time()
     syn_rates = {}
     connection_rates = {}
 
