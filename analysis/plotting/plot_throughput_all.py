@@ -1,12 +1,11 @@
 #!/usr/bin/python
-
 import matplotlib.pyplot as plt
 import argparse
 import time
 from matplotlib.backends.backend_pdf import PdfPages
-from analyze import compute_global_throughput
+from parsing.legacy_analyze import compute_global_throughput
 import numpy as np
-from read_conf import ReadHosts
+from utils.read_conf import read_exp_config
 import sys
 
 
@@ -61,7 +60,7 @@ if __name__ == '__main__':
     servernode = args.server
     directory = args.directory
 
-    hostToIp, ipToHost = ReadHosts()
+    hostToIp, ipToHost = read_exp_config()
 
     if hostnames is not None:
         hosts = np.array([])

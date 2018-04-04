@@ -1,11 +1,10 @@
 #!/usr/bin/python
-
 import matplotlib.pyplot as plt
 import argparse
 from matplotlib.backends.backend_pdf import PdfPages
-from analyze import compute_throughput
+from parsing.legacy_analyze import compute_throughput
 import numpy as np
-from read_conf import ReadHosts
+from utils.read_conf import read_exp_config
 import sys
 
 
@@ -38,7 +37,7 @@ if __name__ == '__main__':
     labels = args.labels
     switch = args.switch
 
-    hostToIp, ipToHost = ReadHosts()
+    hostToIp, ipToHost = read_exp_config()
 
     hosts = np.array([])
     for host in hostnames:
