@@ -7,4 +7,4 @@ echo "0" > /proc/pmonitor
 cat /proc/pmonitor > /proj/ILLpuzzle/results/argus-module.txt
 
 # Remove module
-rmmod pmonitor
+sudo rmmod pmonitor
