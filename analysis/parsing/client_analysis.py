@@ -179,8 +179,9 @@ def compute_connection_time(pcap_file, verbose=False, ignore_retrans=False, timi
         retransmission_count[host] = 0
         dropped_count[host] = []
         incomplete_connections[host] = 0
-        for seq in timing[host].iterkeys():
-            conn = timing[host][seq]
+
+        sorted_items = sorted(timing[host].values(), key=operator.attrgetter('syn_sent'))
+        for conn in sorted_items:
             if conn.is_retransmitted():
                 retransmission_count[host] = retransmission_count[host] + conn.get_num_retransmissions()
 
