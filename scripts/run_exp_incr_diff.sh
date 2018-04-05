@@ -1,8 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
 AAL=$1
 PROJ=ILLpuzzle
-EXP=happymedium
+EXP=happiermedium
 
 OUTPUT=$2
 
@@ -20,7 +20,7 @@ fi
 EXP=$3
 if [ -z "$3" ]
   then
-  EXP=happymedium
+  EXP=happiermedium
 fi
 
 # while true; do
@@ -37,19 +37,25 @@ set -x
 
 # Copy argus daemon output from all clients, attackers, and server to shared /proj/ILLpuzzle/results directory
 cd /proj/ILLpuzzle/results
+mkdir -p argusout
 for (( i = 1; i < 10; i++ )); do
-  scp clientnode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus.out .
+  scp -o StrictHostKeyChecking=no clientnode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus.out .
   mv argus.out argusout/clientnode$i.out
 done
 for (( i = 1; i < 7; i++ )); do
-  scp attacknode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus.out .
+  scp -o StrictHostKeyChecking=no attacknode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus.out .
   mv argus.out argusout/attacknode$i.out
 done
-scp servernode.$EXP.$PROJ.isi.deterlab.net:/tmp/argus.out .
+scp -o StrictHostKeyChecking=no servernode.$EXP.$PROJ.isi.deterlab.net:/tmp/argus.out .
 mv argus.out argusout/servernode.out
 
 # Tar the tcpdump cap files, argus daemon output files, and argus module output together
 sleep 10
-tar -czvf results$OUTPUT.tar.gz *.cap *.out argusout/ argus-module.txt
-rm -f *.cap
-rm -f *.out
+mkdir -p results$OUTPUT
+mv *.cap results$OUTPUT
+mv argusout results$OUTPUT
+mv argus-module.txt results$OUTPUT
+
+tar -czvf results$OUTPUT.tar.gz results$OUTPUT/
+#rm -f *.cap
+#rm argus-module.txt
