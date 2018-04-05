@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
-python /proj/ILLpuzzle/scripts/argus/argus.py stop
-# mv argus.err /tmp
+cd /tmp/argus
+sudo python argus.py stop
