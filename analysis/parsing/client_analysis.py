@@ -182,6 +182,10 @@ def compute_connection_time(pcap_file, verbose=False, ignore_retrans=False, timi
 
         sorted_items = sorted(timing[host].values(), key=operator.attrgetter('syn_sent'))
         for conn in sorted_items:
+            if conn.syn_sent == 0:
+                # skip over the ACKs that correspond to application information
+                continue
+
             if conn.is_retransmitted():
                 retransmission_count[host] = retransmission_count[host] + conn.get_num_retransmissions()
 
