@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -x
 python -c "import psutil" > /dev/null 2>&1

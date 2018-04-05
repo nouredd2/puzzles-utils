@@ -1,6 +1,5 @@
 #!/usr/bin/python
-
-import analyze as an
+import parsing.legacy_analyze as an
 import matplotlib.pyplot as plt
 import argparse
 from matplotlib.backends.backend_pdf import PdfPages

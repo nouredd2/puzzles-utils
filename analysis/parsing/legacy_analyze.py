@@ -1,5 +1,4 @@
 #!/usr/bin/python
-
 import numpy as np
 import time
 import matplotlib.pyplot as plt
@@ -69,7 +68,7 @@ def plot_histogram(_data, _num_bins, _outfile):
     plt.close()
 
 
-def compute_throughput(fname, host, interval, switch):
+def compute_throughput(fname, host, interval, should_switch):
     start_time = time.time()
     f = open(fname)
     rcap = dpkt.pcap.Reader(f)
@@ -100,7 +99,7 @@ def compute_throughput(fname, host, interval, switch):
             continue
 
         iptocheck = ip.dst
-        if (switch):
+        if should_switch:
             iptocheck = ip.src
 
         if ip_to_str(iptocheck) != host:
@@ -344,7 +343,7 @@ def parse_file(fname, ignore_retrans=False):
                     conn = timing[dst][seq]
                     if conn.sport == port:
                         # found it
-                        conn.SetResetFlag(ts)
+                        conn.set_reset_flag(ts)
                         reused = reused + 1
 
                 if reused > 1:
@@ -369,8 +368,8 @@ def parse_file(fname, ignore_retrans=False):
         incomplete_connections[host] = 0
         for seq in timing[host].iterkeys():
             conn = timing[host][seq]
-            if conn.IsRetransmitted():
-                retransmission_count[host] = retransmission_count[host] + conn.GetNumberOfRetransmissions()
+            if conn.is_retransmitted():
+                retransmission_count[host] = retransmission_count[host] + conn.get_num_retransmissions()
 
                 # count retransmission in completed connections.
                 if conn.ack_sent > 0:
@@ -379,7 +378,7 @@ def parse_file(fname, ignore_retrans=False):
                 else:
                     incomplete_connections[host] = incomplete_connections[host] + 1
 
-            elif conn.IsDroppedByServer():
+            elif conn.is_dropped_by_server():
                 dropped_count[host].append(conn.rst_received)
             else:
                 # normal connection completion
