@@ -57,5 +57,5 @@ mv argusout results$OUTPUT
 mv argus-module.txt results$OUTPUT
 
 tar -czvf results$OUTPUT.tar.gz results$OUTPUT/
-#rm -f *.cap
-#rm argus-module.txt
+rm results$OUTPUT/*
+rmdir results$OUTPUT
