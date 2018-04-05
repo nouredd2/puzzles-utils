@@ -1,4 +1,3 @@
-#!/bin/sh
+#!/bin/bash
 
 python /tmp/argus/argus.py stop
-# mv argus.err /tmp

@@ -2,7 +2,7 @@
 
 AAL=$1
 PROJ=ILLpuzzle
-EXP=happymedium
+EXP=happiermedium
 
 OUTPUT=$2
 
@@ -50,6 +50,6 @@ mv argus.out argusout/servernode.out
 
 # Tar the tcpdump cap files, argus daemon output files, and argus module output together
 sleep 10
-tar -czvf results$OUTPUT.tar.gz *.cap *.out argusout/ argus-module.txt
-rm -f *.cap
-rm -f *.out
+tar -czvf results$OUTPUT.tar.gz argusout/ argus-module.txt
+# rm -f *.cap
+# rm -f *.out
