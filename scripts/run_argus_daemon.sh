@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -x
 python -c "import psutil" > /dev/null 2>&1
@@ -13,4 +13,7 @@ cp /proj/ILLpuzzle/modules/argus.tar.gz /tmp
 cd /tmp
 tar -xvf argus.tar.gz
 
-python /tmp/argus/argus.py start
+# -p only makes directory if it doesn't already exist
+cd /tmp/argus
+sudo python argus.py start
+echo "STARTED ARGUS.PY"

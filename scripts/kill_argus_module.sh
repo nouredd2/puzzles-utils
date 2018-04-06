@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Deactivates the module
 echo "0" > /proc/pmonitor

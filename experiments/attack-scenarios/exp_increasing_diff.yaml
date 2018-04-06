@@ -88,7 +88,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 8" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 8" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -104,7 +104,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 9" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 9" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -115,7 +115,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 10" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 10" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -126,7 +126,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 11" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 11" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -137,7 +137,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 12" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 12" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -148,7 +148,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 13" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 13" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -159,7 +159,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 14" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 14" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -170,7 +170,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 15" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 15" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -181,7 +181,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 16" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 16" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -192,7 +192,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 17" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 17" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -203,7 +203,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/set_difficulty.sh 2 18" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 18" }
     - type: event
       agent: change_difficulty_agent
       method: start
@@ -212,7 +212,7 @@ eventstreams:
       triggers: [ { timeout: 60000 } ]
 
     - type: trigger
-      triggers: [ { event: clientStopped} ]
+      triggers: [ { event: module_removed} ]
 
     # Gets here after 16 minutes (after clientStopped triggers)
     - type: event
@@ -261,7 +261,7 @@ eventstreams:
       agent: nping_agent
       method: setConfiguration
       trigger: attackStarted
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/run_nping.sh 500" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/run_nping.sh 500" }
 
     - type: event
       agent: nping_agent
@@ -275,7 +275,7 @@ eventstreams:
     - type: event
       agent: nping_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/kill_nping.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/kill_nping.sh" }
 
     # Starts the script that kills nping
     - type: event
@@ -295,21 +295,21 @@ eventstreams:
     - type: event
       agent: dump_server_agent
       method: startCollection
-      args: { destination: "servernode", expression: "" }
+      args: { destination: "clientnode-1", expression: "" }
     - type: event
       agent: dump_client_agent
       method: startCollection
-      args: { destination: "clientnode-1", expression: "" }
+      args: { destination: "servernode", expression: "" }
     - type: event
       agent: dump_attack_agent
       method: startCollection
-      args: { destination: "attacknode-1", expression: "" }
+      args: { destination: "servernode", expression: "" }
 
       # Starts the kernel module for logging size of listen/accept queues
     - type: event
       agent: argus_module_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/argus/run_argus_module.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/run_argus_module.sh" }
     - type: event
       agent: argus_module_agent
       method: start
@@ -319,15 +319,15 @@ eventstreams:
     - type: event
       agent: log_server_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/argus/run_argus_daemon.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/run_argus_daemon.sh" }
     - type: event
       agent: log_client_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/argus/run_argus_daemon.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/run_argus_daemon.sh" }
     - type: event
       agent: log_attack_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/argus/run_argus_daemon.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/run_argus_daemon.sh" }
       # Actually runs the scripts
     - type: event
       agent: log_server_agent
@@ -343,7 +343,7 @@ eventstreams:
       args: {}
 
     - type: trigger
-      triggers: [ { event: serverStopped } ]
+      triggers: [ { event: clientStopped } ]
 
       # 2 second delay after server stops
     - type: trigger
@@ -353,25 +353,26 @@ eventstreams:
     - type: event
       agent: argus_module_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/argus/kill_argus_module.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/kill_argus_module.sh" }
     - type: event
       agent: argus_module_agent
       method: start
+      trigger: module_removed
       args: {}
 
       # Kill python logging scripts
     - type: event
       agent: log_server_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/kill_argus_daemon.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/kill_argus_daemon.sh" }
     - type: event
       agent: log_client_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/kill_argus_daemon.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/kill_argus_daemon.sh" }
     - type: event
       agent: log_attack_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/scripts/kill_argus_daemon.sh" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/kill_argus_daemon.sh" }
       # Actually runs the script to kill the python logging scripts
     - type: event
       agent: log_server_agent
