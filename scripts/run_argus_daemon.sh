@@ -14,8 +14,6 @@ cd /tmp
 tar -xvf argus.tar.gz
 
 # -p only makes directory if it doesn't already exist
-mkdir -p logs
-touch logs/argus.out
 cd /tmp/argus
 sudo python argus.py start
 echo "STARTED ARGUS.PY"
