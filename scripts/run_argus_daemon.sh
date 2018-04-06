@@ -9,11 +9,9 @@ if [ "$?" -eq "1" ]; then
   sudo python setup.py install > /dev/null 2>&1
 fi
 
-cp /proj/ILLpuzzle/modules/argus.tar.gz /tmp
+cp -R /proj/ILLpuzzle/development/argus /tmp
 cd /tmp
 tar -xvf argus.tar.gz
 
-# -p only makes directory if it doesn't already exist
 cd /tmp/argus
 sudo python argus.py start
-echo "STARTED ARGUS.PY"
