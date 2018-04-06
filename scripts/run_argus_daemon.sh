@@ -10,8 +10,6 @@ if [ "$?" -eq "1" ]; then
 fi
 
 cp -R /proj/ILLpuzzle/development/argus /tmp
-cd /tmp
-tar -xvf argus.tar.gz
 
 cd /tmp/argus
 sudo python argus.py start

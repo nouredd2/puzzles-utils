@@ -39,14 +39,14 @@ set -x
 cd /proj/ILLpuzzle/results
 mkdir -p argusout
 for (( i = 1; i < 10; i++ )); do
-  scp -o StrictHostKeyChecking=no clientnode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus.out .
+  scp -o StrictHostKeyChecking=no clientnode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus/argus.out .
   mv argus.out argusout/clientnode$i.out
 done
 for (( i = 1; i < 7; i++ )); do
-  scp -o StrictHostKeyChecking=no attacknode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus.out .
+  scp -o StrictHostKeyChecking=no attacknode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus/argus.out .
   mv argus.out argusout/attacknode$i.out
 done
-scp -o StrictHostKeyChecking=no servernode.$EXP.$PROJ.isi.deterlab.net:/tmp/argus.out .
+scp -o StrictHostKeyChecking=no servernode.$EXP.$PROJ.isi.deterlab.net:/tmp/arugs/argus.out .
 mv argus.out argusout/servernode.out
 
 # Tar the tcpdump cap files, argus daemon output files, and argus module output together
