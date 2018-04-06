@@ -5,7 +5,7 @@ Description=Magi service
 WorkingDirectory=/users/nouredd2
 User=root
 Type=forking
-ExecStart=/proj/ILLpuzzle/scripts/run_magi.sh
+ExecStart=/proj/ILLpuzzle/puzzles-utils/scripts/run_magi.sh
 Restart=on-failure
 RestartSec=5
 
