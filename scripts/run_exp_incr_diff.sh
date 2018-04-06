@@ -46,15 +46,13 @@ for (( i = 1; i < 7; i++ )); do
   scp -o StrictHostKeyChecking=no attacknode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus/argus.out .
   mv argus.out argusout/attacknode$i.out
 done
-scp -o StrictHostKeyChecking=no servernode.$EXP.$PROJ.isi.deterlab.net:/tmp/arugs/argus.out .
+scp -o StrictHostKeyChecking=no servernode.$EXP.$PROJ.isi.deterlab.net:/tmp/argus/argus.out .
 mv argus.out argusout/servernode.out
 
 # Tar the tcpdump cap files, argus daemon output files, and argus module output together
 sleep 10
-mkdir -p results$OUTPUT
-mv *.cap results$OUTPUT
-mv argusout results$OUTPUT
-mv argus-module.txt results$OUTPUT
+tar -czvf results$OUTPUT.tar.gz *.cap argusout/ argus-module.txt
 
-tar -czvf results$OUTPUT.tar.gz results$OUTPUT/
-rm -rf results$OUTPUT
+yes | rm *.cap
+yes | rm -rf argusout
+yes | rm argus-module.txt
