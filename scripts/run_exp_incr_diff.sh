@@ -4,7 +4,7 @@ AAL=$1
 PROJ=ILLpuzzle
 EXP=happiermedium
 
-OUTPUT=$2
+OUTPUT=""
 
 if [ -z "$1" ]
   then
@@ -17,20 +17,19 @@ if [ -z "$OUTPUT" ]
   OUTPUT=-$(date +"%Y-%m-%d-%M-%S")
 fi
 
+# Change the size of the listen queue if specified
+BACKLOG=$2
+if [ -n "$2" ]
+  then
+  cd /proj/ILLpuzzle/crypto-puzzles/scripts
+  bash set_syn_backlog.sh $BACKLOG
+fi
+
 EXP=$3
 if [ -z "$3" ]
   then
   EXP=happiermedium
 fi
-
-# while true; do
-#     read -p "Do you wish to clean up the results directory (yY/nN)?" yn
-#     case $yn in
-#         [Yy]* ) set -x; rm -f ~/proj/results/*.cap; set +x; break;;
-#         [Nn]* ) break;;
-#         * ) echo "Please answer yes or no.";;
-#     esac
-# done
 
 set -x
 /share/magi/current/magi_orchestrator.py --experiment $EXP --project $PROJ --events $AAL
