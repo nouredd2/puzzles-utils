@@ -62,7 +62,7 @@ def compute_throughput(pcapFile, interval, server_ip=None):
     @server_ip: [Optional] The server ip in case the throughput for the server is
         also to be computed
 
-    @returns nothing
+    @returns a dictionary mapping each host to its observed throughput for each interval
     """
     start_time = time.time()
     f = open(pcapFile)
