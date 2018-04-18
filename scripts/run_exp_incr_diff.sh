@@ -54,7 +54,7 @@ sleep 10
 mkdir -p results$OUTPUT
 mv *.cap results$OUTPUT
 mv argusout results$OUTPUT
-mv argus-module.txt results$OUTPUT
+mv argus-module.txt results$OUTPUT/moduleout
 
 tar -czvf results$OUTPUT.tar.gz results$OUTPUT/
 rm -rf results$OUTPUT
