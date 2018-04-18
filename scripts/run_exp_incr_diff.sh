@@ -4,7 +4,7 @@ AAL=$1
 PROJ=ILLpuzzle
 EXP=happiermedium
 
-OUTPUT=$2
+OUTPUT=""
 
 if [ -z "$1" ]
   then
@@ -17,20 +17,19 @@ if [ -z "$OUTPUT" ]
   OUTPUT=-$(date +"%Y-%m-%d-%M-%S")
 fi
 
+# Change the size of the listen queue if specified
+BACKLOG=$2
+if [ -n "$2" ]
+  then
+  cd /proj/ILLpuzzle/crypto-puzzles/scripts
+  bash set_syn_backlog.sh $BACKLOG
+fi
+
 EXP=$3
 if [ -z "$3" ]
   then
   EXP=happiermedium
 fi
-
-# while true; do
-#     read -p "Do you wish to clean up the results directory (yY/nN)?" yn
-#     case $yn in
-#         [Yy]* ) set -x; rm -f ~/proj/results/*.cap; set +x; break;;
-#         [Nn]* ) break;;
-#         * ) echo "Please answer yes or no.";;
-#     esac
-# done
 
 set -x
 /share/magi/current/magi_orchestrator.py --experiment $EXP --project $PROJ --events $AAL
@@ -39,22 +38,22 @@ set -x
 cd /proj/ILLpuzzle/results
 mkdir -p argusout
 for (( i = 1; i < 10; i++ )); do
-  scp -o StrictHostKeyChecking=no clientnode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus.out .
+  scp -o StrictHostKeyChecking=no clientnode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus/argus.out .
   mv argus.out argusout/clientnode$i.out
 done
 for (( i = 1; i < 7; i++ )); do
-  scp -o StrictHostKeyChecking=no attacknode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus.out .
+  scp -o StrictHostKeyChecking=no attacknode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus/argus.out .
   mv argus.out argusout/attacknode$i.out
 done
-scp -o StrictHostKeyChecking=no servernode.$EXP.$PROJ.isi.deterlab.net:/tmp/argus.out .
+scp -o StrictHostKeyChecking=no servernode.$EXP.$PROJ.isi.deterlab.net:/tmp/argus/argus.out .
 mv argus.out argusout/servernode.out
 
 # Tar the tcpdump cap files, argus daemon output files, and argus module output together
 sleep 10
-mkdir -p results$OUTPUT
-mv *.cap results$OUTPUT
-mv argusout results$OUTPUT
-mv argus-module.txt results$OUTPUT/moduleout
+mkdir -p moduleout
+mv argus-module.txt moduleout/argus-module.txt
+tar -czvf results$OUTPUT.tar.gz *.cap argusout/ moduleout/
 
-tar -czvf results$OUTPUT.tar.gz results$OUTPUT/
-rm -rf results$OUTPUT
+yes | rm *.cap
+yes | rm -rf argusout
+yes | rm argus-module.txt
