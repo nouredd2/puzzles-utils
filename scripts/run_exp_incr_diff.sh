@@ -2,33 +2,27 @@
 
 AAL=$1
 PROJ=ILLpuzzle
-EXP=happiermedium
 
-OUTPUT=""
-
-if [ -z "$1" ]
-  then
-  echo "[Usage:] ./run_exp_incr_diff event_file [archive name] [experiment name]"
+if [ -z "$1" ]; then
+  echo "[Usage:] ./run_exp_incr_diff event_file [queue_size] [experiment_name] [archive_name]"
   exit 0
-fi
-
-if [ -z "$OUTPUT" ]
-  then
-  OUTPUT=-$(date +"%Y-%m-%d-%M-%S")
 fi
 
 # Change the size of the listen queue if specified
 BACKLOG=$2
-if [ -n "$2" ]
-  then
+if [ -n "$2" ]; then
   cd /proj/ILLpuzzle/crypto-puzzles/scripts
   bash set_syn_backlog.sh $BACKLOG
 fi
 
 EXP=$3
-if [ -z "$3" ]
-  then
+if [ -z "$3" ]; then
   EXP=happiermedium
+fi
+
+ARCH_NAME=$3
+if [ -z "$3" ]; then
+  ARCH_NAME=-$(date +"%Y-%m-%d-%M-%S")
 fi
 
 set -x
@@ -52,8 +46,7 @@ mv argus.out argusout/servernode.out
 sleep 10
 mkdir -p moduleout
 mv argus-module.txt moduleout/argus-module.txt
-tar -czvf results$OUTPUT.tar.gz *.cap argusout/ moduleout/
+tar -czvf results$ARCH_NAME.tar.gz *.cap argusout/ moduleout/
 
 yes | rm *.cap
-yes | rm -rf argusout
-yes | rm argus-module.txt
+yes | rm -rf argusout moduleout
