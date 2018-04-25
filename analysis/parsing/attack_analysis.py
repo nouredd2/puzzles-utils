@@ -70,7 +70,7 @@ def compute_effective_rate(pcap_file, interval_s, verbose=False, timing=None):
                 continue
 
             # check if the server dropped this connection
-            if conn.IsDroppedByServer():
+            if conn.is_dropped_by_server():
                 num_failed += 1
                 continue
 
