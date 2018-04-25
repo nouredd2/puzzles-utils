@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import datetime as datetime
+from datetime import datetime
 
 def get_daemon_stats_from_file(filename):
     """
@@ -12,27 +12,19 @@ def get_daemon_stats_from_file(filename):
     @returns a dictionary mapping labels (Timestamp, cpu_percent, etc.)
         to their corresponding values in the data dump
     """
-    sample_rate = 0
-    got_sample = False
     with open(filename, 'r') as argus_file:
         header = argus_file.readline().split()
         stats_lists = [[cat] for cat in header]
         for lineno, line in enumerate(argus_file):
             for i, stat in enumerate(line.strip().split()):
-                if i is 0:
-                    stat = lineno
-                    if not sample_rate and not got_sample:
-                        sample_rate = datetime.datetime.fromtimestamp(float(stat))
-                    elif not got_sample:
-                        sample_rate = int((sample_rate - datetime.datetime.fromtimestamp(float(stat))).total_seconds())
-                        got_sample = True
+                if i is 0: stat = lineno
                 elif i is 1: stat = float(stat)
                 else: stat = int(stat)
 
                 stats_lists[i].append(stat)
 
         file_stats = {l[0]: l[1:] for l in stats_lists}
-        return file_stats, sample_rate
+        return file_stats
 
 
 def get_module_stats_from_file(filename):
