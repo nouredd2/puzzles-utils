@@ -94,6 +94,9 @@ eventstreams:
       trigger: serverStarted
       args: {}
 
+    - type: trigger
+      triggers: [ { event: clientStopped } ]
+
     # Gets here after 16 minutes (after clientStopped triggers)
     - type: event
       agent: change_difficulty_agent
