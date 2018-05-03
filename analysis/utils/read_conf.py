@@ -21,7 +21,10 @@ def read_exp_config(expfile='../experiment_conf/experiment.conf'):
     for line in content:
         values = line.split()
 
-        hostname = values[0].split(':')[0]
+        if len(values[0].split(':')) >= 1:
+            hostname = values[0].split(':')[0]
+        else
+            hostname = values[0]
         host_to_ip[hostname] = values[1]
         ip_to_host[values[1]] = hostname
 
