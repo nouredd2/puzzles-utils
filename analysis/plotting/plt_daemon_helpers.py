@@ -29,7 +29,7 @@ def plot_cpu_usage(daemon_stats, host, sampling_rate, fig, colors, rows=1, cols=
     cpu_array = daemon_stats['cpu_percent']
 
     ax.plot(ts_array, cpu_array, markerfacecolor='none',
-            linewidth=2, color=colors[coloridx])
+            label=host, color=colors[coloridx])
 
     # the usual paper formatting options
     ax.grid(axis='y', color="0.9", linestyle='-', linewidth=1)
