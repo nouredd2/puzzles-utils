@@ -181,6 +181,7 @@ def compute_connection_time(pcap_file, verbose=False, ignore_retrans=False, timi
         incomplete_connections[host] = 0
 
         sorted_items = sorted(timing[host].values(), key=operator.attrgetter('syn_sent'))
+        num_connections = 0
         for conn in sorted_items:
             if conn.syn_sent == 0:
                 # skip over the ACKs that correspond to application information
@@ -220,7 +221,7 @@ def compute_connection_time(pcap_file, verbose=False, ignore_retrans=False, timi
         {:38}\t{}
         {:38}\t{}
         {:38}\t{}""".format('Statistics for host:', host,
-                            'Total number of attempted connections:', len(timing[host]),
+                            'Total number of attempted connections:', num_connections,
                             'Total number of completed connections:', len(connection_time[host]),
                             'Total number of retransmission:', retransmission_count[host],
                             'Total number of dropped connections', len(dropped_count[host]),
