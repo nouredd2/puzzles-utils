@@ -46,8 +46,9 @@ def plot_cpu_usage(daemon_stats, host, sampling_rate, fig, colors, rows=1, cols=
 
     return ax
 
+
 def plot_module_data(module_stats, label, sampling_rate, fig, colors, rows=1, cols=1,
-                     figidx=1, coloridx=0):
+                     figidx=1, coloridx=0, linewidth=2):
     """
     Create a plot of the module data coming out of the server node
 
@@ -72,9 +73,9 @@ def plot_module_data(module_stats, label, sampling_rate, fig, colors, rows=1, co
     accept_q = module_stats['accept_q']
 
     ax.plot(ts_array, listen_q, markerfacecolor='none',
-            label='Listen Queue', color=colors[coloridx])
+            label='Listen Queue', color=colors[coloridx], linewidth=linewidth)
     ax.plot(ts_array, accept_q, markerfacecolor='none',
-            label='Accept Queue', color=colors[coloridx+1])
+            label='Accept Queue', color=colors[coloridx+1], linewidth=linewidth)
 
     # the usual paper formatting options
     ax.grid(axis='y', color="0.9", linestyle='-', linewidth=1)
