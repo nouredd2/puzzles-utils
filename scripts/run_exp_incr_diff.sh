@@ -24,14 +24,20 @@ set -x
 # Copy argus daemon output from all clients, attackers, and server to shared /proj/ILLpuzzle/results directory
 cd /proj/ILLpuzzle/results
 mkdir -p argusout
-for (( i = 1; i < 10; i++ )); do
+set +x
+for (( i = 1; i <= 15; i++ )); do
+  set -x
   scp -o StrictHostKeyChecking=no clientnode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus/argus.out .
   mv argus.out argusout/clientnode$i.out
+  set +x
 done
-for (( i = 1; i < 7; i++ )); do
+for (( i = 1; i <= 10; i++ )); do
+  set -x
   scp -o StrictHostKeyChecking=no attacknode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus/argus.out .
   mv argus.out argusout/attacknode$i.out
+  set +x
 done
+set -x
 scp -o StrictHostKeyChecking=no servernode.$EXP.$PROJ.isi.deterlab.net:/tmp/argus/argus.out .
 mv argus.out argusout/servernode.out
 

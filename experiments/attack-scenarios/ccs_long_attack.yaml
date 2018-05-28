@@ -140,7 +140,7 @@ eventstreams:
 
     # Stops the client after 16 minutes, which then triggers the server to stop
     - type: trigger
-      triggers: [ { timeout: 600000 } ]
+      triggers: [ { timeout: 720000 } ]
 
     - type: event
       agent: client_agent
@@ -170,7 +170,7 @@ eventstreams:
 
     # Attack ends after 6 minutes
     - type: trigger
-      triggers: [ { timeout: 360000 } ]
+      triggers: [ { timeout: 600000 } ]
 
     - type: event
       agent: nping_agent
@@ -235,10 +235,6 @@ eventstreams:
 
     - type: trigger
       triggers: [ { event: clientStopped } ]
-
-      # 2 second delay after server stops
-    - type: trigger
-      triggers: [ { timeout: 2000 } ]
 
       # Kill python logging scripts
     - type: event

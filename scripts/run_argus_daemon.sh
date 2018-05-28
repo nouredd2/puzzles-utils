@@ -9,6 +9,7 @@ if [ "$?" -eq "1" ]; then
   sudo python setup.py install > /dev/null 2>&1
 fi
 
+rm -rf /tmp/argus
 cp -R /proj/ILLpuzzle/development/argus /tmp
 
 cd /tmp/argus

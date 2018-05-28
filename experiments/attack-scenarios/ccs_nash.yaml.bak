@@ -76,7 +76,7 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 17" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 4 18" }
     - type: event
       agent: change_difficulty_agent
       method: start

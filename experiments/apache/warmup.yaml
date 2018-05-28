@@ -1,14 +1,16 @@
 groups:
   client_group: [clientnode-1, clientnode-2, clientnode-3, clientnode-4, clientnode-5, clientnode-6,
                  clientnode-7, clientnode-8, clientnode-9, clientnode-10, clientnode-11, clientnode-12,
-                 clientnode-13, clientnode-14, clientnode-15]
+                 clientnode-13, clientnode-14, clientnode-15, attacknode-1, attacknode-2, attacknode-3,
+                 attacknode-4, attacknode-5, attacknode-6, attacknode-7, attacknode-8, attacknode-9,
+                 attacknode-10]
   server_group: &slist [servernode]
 
 agents:
   client_agent:
     group: client_group
     path: /share/magi/modules/http_client/http_client.tar.gz
-    execargs: {servers: *slist, interval: '0.0625', sizes: '10000'}
+    execargs: {servers: *slist, interval: 'expo(20)', sizes: '10000'}
 
   server_agent:
     group: server_group
@@ -23,6 +25,20 @@ agents:
   log_agent:
     group: server_group
     path: /share/magi/modules/tcpdump/tcpdump.tar.gz
+    execargs: []
+
+  argus_module_agent:
+    group: server_group
+    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
+    execargs: []
+
+  log_server_agent:
+    group: server_group
+    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
+    execargs: []
+  log_client_agent:
+    group: client_group
+    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
     execargs: []
 
 ## The mapping from the AAL procedure to the experiment apparatus 
@@ -40,12 +56,75 @@ eventstreams:
       agent: log_agent
       method: startCollection
       args: { destination: "clientnode-1", expression: "" }
+
+    ################### Module start
+    - type: event
+      agent: argus_module_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/run_argus_module.sh" }
+
+    - type: event
+      agent: argus_module_agent
+      method: start
+      args: {}
+
+    ################### Daemon start
+    - type: event
+      agent: log_server_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/run_argus_daemon.sh" }
+
+    - type: event
+      agent: log_client_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/run_argus_daemon.sh" }
+
+      # Actually runs the scripts
+    - type: event
+      agent: log_server_agent
+      method: start
+      args: {}
+
+    - type: event
+      agent: log_client_agent
+      method: start
+      args: {}
   
+    ################### wait for server to stop
     - type: trigger
       triggers: [ { event: serverStopped } ] 
 
     - type: trigger
       triggers: [ { timeout: 1000 } ]
+
+    - type: event
+      agent: argus_module_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/kill_argus_module.sh" }
+    - type: event
+      agent: argus_module_agent
+      method: start
+      trigger: module_removed
+      args: {}
+
+    - type: event
+      agent: log_server_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/kill_argus_daemon.sh" }
+    - type: event
+      agent: log_client_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/kill_argus_daemon.sh" }
+
+    # Actually runs the script to kill the python logging scripts
+    - type: event
+      agent: log_server_agent
+      method: start
+      args: {}
+    - type: event
+      agent: log_client_agent
+      method: start
+      args: {}
  
     - type: event
       agent: dump_agent
@@ -79,6 +158,22 @@ eventstreams:
       trigger: filesCopied
       method: archiveDump
       args: { archivepath: /proj/ILLpuzzle/results/ }
+
+    # stop all cmdline
+    - type: event
+      agent: log_server_agent
+      method: stop 
+      args: {}
+
+    - type: event
+      agent: log_client_agent
+      method: stop 
+      args: {}
+
+    - type: event
+      agent: argus_module_agent
+      method: stop 
+      args: {}
 
   serverstream: 
     - type: event

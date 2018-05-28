@@ -65,6 +65,12 @@ agents:
     path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
     execargs: []
 
+  hel_dynamic_agent:
+    group: server_group
+    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
+    execargs: []
+
+
 # The mapping from the AAL procedure to the experiment apparatus
 streamstarts: [serverstream, clientstream, attackstream, monitor, cleanupstream]
 
@@ -158,6 +164,16 @@ eventstreams:
       triggers: [ { timeout: 120000 } ]
 
     - type: event
+      agent: hel_dynamic_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/run_hel_daemon.sh" }
+
+    - type: event
+      agent: hel_dynamic_agent
+      method: start
+      args: {}
+
+    - type: event
       agent: nping_agent
       method: setConfiguration
       trigger: attackStarted
@@ -183,9 +199,25 @@ eventstreams:
       method: start
       args: {}
 
+    - type: event
+      agent: hel_dynamic_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/kill_hel_daemon.sh" }
+
+    - type: event
+      agent: hel_dynamic_agent
+      method: start
+      args: {}
+
     # Technically unncessary but this can't hurt
     - type: event
       agent: nping_agent
+      method: stop
+      args: {}
+
+    # Technically unncessary but this can't hurt
+    - type: event
+      agent: hel_dynamic_agent
       method: stop
       args: {}
 
@@ -235,10 +267,6 @@ eventstreams:
 
     - type: trigger
       triggers: [ { event: clientStopped } ]
-
-      # 2 second delay after server stops
-    - type: trigger
-      triggers: [ { timeout: 2000 } ]
 
       # Kill python logging scripts
     - type: event
