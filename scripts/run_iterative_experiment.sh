@@ -70,9 +70,9 @@ for k in 1 2
 do
   for d in 15 16 17 18
   do
-    AAL_FILE_NAME="${TEMP_NAME}_${k}_${d}"
+    AAL_FILE_NAME="${TEMP_NAME}_${k}_${d}.yaml"
     set -x
     sed "s/set_difficulty.sh.*\"/set_difficulty.sh $k $d\"/" $AAL > $AAL_FILE_NAME
-    bash /proj/ILlpuzzle/puzzles-utils/scripts/run_experiment.sh -e $AAL_FILE_NAME -x $EXP -p $PROJ -a ${ARCH_NAME}_${k}_${d}
+    bash /proj/ILLpuzzle/puzzles-utils/scripts/run_experiment.sh -e $AAL_FILE_NAME -x $EXP -p $PROJ -a ${ARCH_NAME}_${k}_${d}
   done
 done
