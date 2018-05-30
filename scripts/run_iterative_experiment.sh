@@ -65,7 +65,8 @@ if [ -z "$PROJ" ]; then
   echo "WARNING: Setting default project to $PROJ"
 fi
 
-TEMP_NAME="autogen_iterative"
+AAL_DIR=`dirname $AAL`
+TEMP_NAME="${AAL_DIR}/autogen_iterative"
 for k in 1 2
 do
   for d in 15 16 17 18
