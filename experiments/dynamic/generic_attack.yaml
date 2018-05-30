@@ -1,13 +1,17 @@
 # Agent activation language file containing procedure for magi experiment that will
-# slowly increase the difficulty of puzzles over an 11-minute period, and log results
+# run an connection depletion attack against the target server using all of the attack
+# nodes.
+#
+# Attak starts 1 minutes after the simluation starts, lasts for 2 minutes and then ends.
+# The simulation recovers for the last 2 minutes before concluding. 
+#
 
 groups:
   attack_group: [attacknode-1, attacknode-2, attacknode-3, attacknode-4, attacknode-5,
-                attacknode-6, attacknode-7, attacknode-8, attacknode-9, attacknode-10]
+                 attacknode-6, attacknode-7, attacknode-8, attacknode-9, attacknode-10]
   server_group: &slist [servernode]
-   client_group: [clientnode-1, clientnode-2, clientnode-3, clientnode-4, clientnode-5,
-                 clientnode-6, clientnode-7, clientnode-8, clientnode-9, clientnode-10,
-                 clientnode-11, clientnode-12, clientnode-13, clientnode-14, clientnode-15]
+  client_group: [clientnode-1, clientnode-2, clientnode-3, clientnode-4, clientnode-5, clientnode-6, clientnode-7,
+                 clientnode-8, clientnode-9, clientnode-10, clientnode-11, clientnode-12, clientnode-13, clientnode-14, clientnode-15]
 
 agents:
   # For running the main scripts on the server, clients, and attackers (the actual connection attempts
@@ -27,9 +31,11 @@ agents:
     path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
     execargs: []
 
+  # agent to set the difficulty at the server end
+  # uses our custom runcmd modified agent
   change_difficulty_agent:
     group: server_group
-    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz # custom agent for running a command
+    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz 
     execargs: []
 
   # For running the Python scripts to log CPU load, memory load, and puzzles sent/received
@@ -70,158 +76,80 @@ agents:
 streamstarts: [serverstream, clientstream, attackstream, monitor, cleanupstream]
 
 eventstreams:
-  # 1. Server
+################################################################################################
+### 1. Server
+################################################################################################
   serverstream:
 
-    # Start server and trigger serverStarted
+    # Set the difficult to default value. This is be used by sed to change the 
+    # from one experiment to another in iterative scripts.
+    - type: event
+      agent: change_difficulty_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 17" }
+
+    - type: event
+      agent: change_difficulty_agent
+      method: start
+      args: {}
+
+    - type: event
+      agent: change_difficulty_agent
+      method: stop
+      args: {}
+
+    # start the actual apache process
     - type: event
       agent: server_agent
       method: startServer
       trigger: serverStarted
       args: {}
 
-    # Increment difficulty 10 times with 1 minute intervals
+    # Starts the kernel module for logging size of listen/accept queues
     - type: event
-      agent: change_difficulty_agent
+      agent: argus_module_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 8" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/run_argus_module.sh" }
+
     - type: event
-      agent: change_difficulty_agent
+      agent: argus_module_agent
       method: start
       args: {}
 
-    # Waits for the attack to start before starting first 60-second trigger
+    # wait for experiment end trigger
     - type: trigger
-      triggers: [ { event: attackStarted } ]
+      triggers: [ { event: clientStopped } ]
 
-    - type: trigger
-      triggers: [ { timeout: 60000 } ]
-
+    # Runs script to kill the kernel module
     - type: event
-      agent: change_difficulty_agent
+      agent: argus_module_agent
       method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 9" }
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/kill_argus_module.sh" }
     - type: event
-      agent: change_difficulty_agent
+      agent: argus_module_agent
       method: start
+      trigger: module_removed
       args: {}
-    - type: trigger
-      triggers: [ { timeout: 60000 } ]
 
     - type: event
-      agent: change_difficulty_agent
-      method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 10" }
-    - type: event
-      agent: change_difficulty_agent
-      method: start
+      agent: argus_module_agent
+      method: stop
       args: {}
-    - type: trigger
-      triggers: [ { timeout: 60000 } ]
 
-    - type: event
-      agent: change_difficulty_agent
-      method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 11" }
-    - type: event
-      agent: change_difficulty_agent
-      method: start
-      args: {}
-    - type: trigger
-      triggers: [ { timeout: 60000 } ]
-
-    - type: event
-      agent: change_difficulty_agent
-      method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 12" }
-    - type: event
-      agent: change_difficulty_agent
-      method: start
-      args: {}
-    - type: trigger
-      triggers: [ { timeout: 60000 } ]
-
-    - type: event
-      agent: change_difficulty_agent
-      method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 13" }
-    - type: event
-      agent: change_difficulty_agent
-      method: start
-      args: {}
-    - type: trigger
-      triggers: [ { timeout: 60000 } ]
-
-    - type: event
-      agent: change_difficulty_agent
-      method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 14" }
-    - type: event
-      agent: change_difficulty_agent
-      method: start
-      args: {}
-    - type: trigger
-      triggers: [ { timeout: 60000 } ]
-
-    - type: event
-      agent: change_difficulty_agent
-      method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 15" }
-    - type: event
-      agent: change_difficulty_agent
-      method: start
-      args: {}
-    - type: trigger
-      triggers: [ { timeout: 60000 } ]
-
-    - type: event
-      agent: change_difficulty_agent
-      method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 16" }
-    - type: event
-      agent: change_difficulty_agent
-      method: start
-      args: {}
-    - type: trigger
-      triggers: [ { timeout: 60000 } ]
-
-    - type: event
-      agent: change_difficulty_agent
-      method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 17" }
-    - type: event
-      agent: change_difficulty_agent
-      method: start
-      args: {}
-    - type: trigger
-      triggers: [ { timeout: 60000 } ]
-
-    - type: event
-      agent: change_difficulty_agent
-      method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 18" }
-    - type: event
-      agent: change_difficulty_agent
-      method: start
-      args: {}
-    - type: trigger
-      triggers: [ { timeout: 60000 } ]
-
-    - type: trigger
-      triggers: [ { event: module_removed} ]
-
-    # Gets here after 16 minutes (after clientStopped triggers)
-    - type: event
-      agent: change_difficulty_agent
-      method: stop # just for the daemon to know it's done; won't actually call a script because it's unnecessary
-      args: {}
     - type: event
       agent: server_agent
       method: stopServer
       trigger: serverStopped
       args: {}
+      
+################################################################################################
+### End of serverstream
+################################################################################################
 
-  # 2. Client
+
+################################################################################################
+### 2. Client
+################################################################################################
   clientstream:
 
     # Wait for serverStarted trigger
@@ -234,9 +162,9 @@ eventstreams:
       method: startClient
       args: {}
 
-    # Stops the client after 16 minutes, which then triggers the server to stop
+    # Stops the client after 5 minutes, which then triggers the server to stop
     - type: trigger
-      triggers: [ { timeout: 960000 } ]
+      triggers: [ { timeout: 300000 } ]
 
     - type: event
       agent: client_agent
@@ -244,14 +172,20 @@ eventstreams:
       trigger: clientStopped
       args: {}
 
-  # 3. Attackers
+################################################################################################
+### End of clientstream
+################################################################################################
+
+################################################################################################
+### 3. Attacker
+################################################################################################
   attackstream:
     - type: trigger
       triggers: [ { event: serverStarted } ]
 
-    # Attack starts after 2 minutes
+    # Attack starts after 1 minutes
     - type: trigger
-      triggers: [ { timeout: 120000 } ]
+      triggers: [ { timeout: 60000 } ]
 
     - type: event
       agent: nping_agent
@@ -264,9 +198,9 @@ eventstreams:
       method: start
       args: {}
 
-    # Attack ends after 11 minutes
+    # Attack ends after 2 minutes
     - type: trigger
-      triggers: [ { timeout: 660000 } ]
+      triggers: [ { timeout: 120000 } ]
 
     - type: event
       agent: nping_agent
@@ -284,8 +218,14 @@ eventstreams:
       agent: nping_agent
       method: stop
       args: {}
+      
+################################################################################################
+### End of clientstream
+################################################################################################
 
-  # 4. All events necessary for logging
+################################################################################################
+### 4. Monitors
+################################################################################################
   monitor:
       # Start tcpdump collection for server, clients, and attackers
     - type: event
@@ -301,16 +241,6 @@ eventstreams:
       method: startCollection
       args: { destination: "servernode", expression: "" }
 
-      # Starts the kernel module for logging size of listen/accept queues
-    - type: event
-      agent: argus_module_agent
-      method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/run_argus_module.sh" }
-    - type: event
-      agent: argus_module_agent
-      method: start
-      args: {}
-
       # Configure python logging scripts
     - type: event
       agent: log_server_agent
@@ -324,7 +254,8 @@ eventstreams:
       agent: log_attack_agent
       method: setConfiguration
       args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/run_argus_daemon.sh" }
-      # Actually runs the scripts
+      
+    # Actually runs the scripts
     - type: event
       agent: log_server_agent
       method: start
@@ -344,17 +275,6 @@ eventstreams:
       # 2 second delay after server stops
     - type: trigger
       triggers: [ { timeout: 2000 } ]
-
-      # Runs script to kill the kernel module
-    - type: event
-      agent: argus_module_agent
-      method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/kill_argus_module.sh" }
-    - type: event
-      agent: argus_module_agent
-      method: start
-      trigger: module_removed
-      args: {}
 
       # Kill python logging scripts
     - type: event
@@ -383,7 +303,7 @@ eventstreams:
       method: start
       args: {}
 
-      # Next 3 events sequentially stop collection for server, clients, and attackers
+    # Next 3 events sequentially stop collection for server, clients, and attackers
     - type: event
       agent: dump_server_agent
       method: stopCollection
@@ -408,7 +328,7 @@ eventstreams:
     - type: trigger
       triggers: [ {event: attackCollectionStopped} ]
 
-      # Next 3 events archive the tcp dumps for server, clients, and attackers
+    # Next 3 events archive the tcp dumps for server, clients, and attackers
     - type: event
       agent: dump_server_agent
       method: archiveDump
@@ -431,7 +351,17 @@ eventstreams:
       trigger: allFilesArchived # Triggers the cleanup stream
       args: { archivepath: /proj/ILLpuzzle/results/ }
 
-  # 5. Exits
+################################################################################################
+### End of monitorstream
+################################################################################################
+
+################################################################################################
+### 5. Exit events
+################################################################################################
   cleanupstream:
     - type: trigger
       triggers: [ {event: allFilesArchived, target: exit} ]
+
+################################################################################################
+### End of File
+################################################################################################
