@@ -303,6 +303,20 @@ eventstreams:
       method: start
       args: {}
 
+    # stop the agents
+    - type: event
+      agent: log_server_agent
+      method: stop
+      args: {}
+    - type: event
+      agent: log_client_agent
+      method: stop
+      args: {}
+    - type: event
+      agent: log_attack_agent
+      method: stop
+      args: {}
+
     # Next 3 events sequentially stop collection for server, clients, and attackers
     - type: event
       agent: dump_server_agent
