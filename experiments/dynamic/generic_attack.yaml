@@ -93,10 +93,6 @@ eventstreams:
       method: start
       args: {}
 
-    # wait for challenge agent to complete
-    - type: trigger
-      triggers: [ { event: SetChallengeComplete } ]
-
     # start the actual apache process
     - type: event
       agent: server_agent
@@ -138,7 +134,6 @@ eventstreams:
     - type: event
       agent: diff_agent
       method: stop
-      trigger: SetChallengeComplete
       args: {}
 
     - type: event
