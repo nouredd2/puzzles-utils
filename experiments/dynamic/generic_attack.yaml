@@ -96,7 +96,12 @@ eventstreams:
     - type: event
       agent: change_difficulty_agent
       method: stop
+      trigger: SetChallengeComplete
       args: {}
+
+    # wait for challenge agent to complete
+    - type: trigger
+      triggers: [ { event: SetChallengeComplete } ]
 
     # start the actual apache process
     - type: event
