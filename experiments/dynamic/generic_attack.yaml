@@ -33,7 +33,7 @@ agents:
 
   # agent to set the difficulty at the server end
   # uses our custom runcmd modified agent
-  change_difficulty_agent:
+  diff_agent:
     group: server_group
     path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz 
     execargs: []
@@ -84,19 +84,13 @@ eventstreams:
     # Set the difficult to default value. This is be used by sed to change the 
     # from one experiment to another in iterative scripts.
     - type: event
-      agent: change_difficulty_agent
+      agent: diff_agent
       method: setConfiguration
       args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 17" }
 
     - type: event
-      agent: change_difficulty_agent
+      agent: diff_agent
       method: start
-      args: {}
-
-    - type: event
-      agent: change_difficulty_agent
-      method: stop
-      trigger: SetChallengeComplete
       args: {}
 
     # wait for challenge agent to complete
@@ -139,6 +133,12 @@ eventstreams:
     - type: event
       agent: argus_module_agent
       method: stop
+      args: {}
+
+    - type: event
+      agent: diff_agent
+      method: stop
+      trigger: SetChallengeComplete
       args: {}
 
     - type: event
