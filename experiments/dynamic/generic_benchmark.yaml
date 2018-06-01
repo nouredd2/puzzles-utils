@@ -1,0 +1,281 @@
+# Agent activation language file containing procedure for magi experiment that will
+# run a benchmark apache2 experiment to have ground truth performance. 
+#
+
+groups:
+  server_group: &slist [servernode]
+  client_group: [clientnode-1, clientnode-2, clientnode-3, clientnode-4, clientnode-5,
+                 clientnode-6, clientnode-7, clientnode-8, clientnode-9, clientnode-10,
+                 clientnode-11, clientnode-12, clientnode-13, clientnode-14, clientnode-15,
+                 attacknode-1, attacknode-2, attacknode-3, attacknode-4, attacknode-5,
+                 attacknode-6, attacknode-7, attacknode-8, attacknode-9, attacknode-10]
+
+agents:
+  # For running the main scripts on the server and clients (the actual connection attempts
+  # and sending/receiving of puzzles)
+  server_agent:
+    group: server_group
+    path: /share/magi/modules/apache/apache.tar.gz
+    execargs: []
+  client_agent:
+    group: client_group
+    path: /share/magi/modules/http_client/http_client.tar.gz
+    execargs: {servers: *slist, interval: 'expo(20)', sizes: '10000'}
+
+  # agent to set the difficulty at the server end
+  # uses our custom runcmd modified agent
+  diff_agent:
+    group: server_group
+    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz 
+    execargs: []
+
+  # For running the Python scripts to log CPU load, memory load, and puzzles sent/received
+  log_server_agent:
+    group: server_group
+    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
+    execargs: []
+  log_client_agent:
+    group: client_group
+    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
+    execargs: []
+
+  # For running tcpdump on the server and clients
+  dump_server_agent:
+    group: server_group
+    path: /share/magi/modules/tcpdump/tcpdump.tar.gz
+    execargs: [] # tcpdump takes no command line args
+  dump_client_agent:
+    group: client_group
+    path: /share/magi/modules/tcpdump/tcpdump.tar.gz
+    execargs: []
+
+  # For running the kernel module to log the size of the TCP socket's listen/accept queues
+  argus_module_agent:
+    group: server_group
+    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
+    execargs: []
+
+# The mapping from the AAL procedure to the experiment apparatus
+streamstarts: [serverstream, clientstream, monitor, cleanupstream]
+
+eventstreams:
+################################################################################################
+### 1. Server
+################################################################################################
+  serverstream:
+
+    # Set the difficult to default value. This is be used by sed to change the 
+    # from one experiment to another in iterative scripts.
+    - type: event
+      agent: diff_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/set_difficulty.sh 2 17" }
+
+    - type: event
+      agent: diff_agent
+      method: start
+      args: {}
+
+    # start the actual apache process
+    - type: event
+      agent: server_agent
+      method: startServer
+      trigger: serverStarted
+      args: {}
+
+    # Starts the kernel module for logging size of listen/accept queues
+    - type: event
+      agent: argus_module_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/run_argus_module.sh" }
+
+    - type: event
+      agent: argus_module_agent
+      method: start
+      args: {}
+
+    # wait for experiment end trigger
+    - type: trigger
+      triggers: [ { event: clientStopped } ]
+
+    # Runs script to kill the kernel module
+    - type: event
+      agent: argus_module_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/kill_argus_module.sh" }
+    - type: event
+      agent: argus_module_agent
+      method: start
+      trigger: module_removed
+      args: {}
+
+    - type: event
+      agent: argus_module_agent
+      method: stop
+      args: {}
+
+    - type: event
+      agent: diff_agent
+      method: stop
+      args: {}
+
+    - type: event
+      agent: server_agent
+      method: stopServer
+      trigger: serverStopped
+      args: {}
+      
+################################################################################################
+### End of serverstream
+################################################################################################
+
+
+################################################################################################
+### 2. Client
+################################################################################################
+  clientstream:
+
+    # Wait for serverStarted trigger
+    - type: trigger
+      triggers: [ { event: serverStarted } ]
+
+    # Start all client nodes through client_agent
+    - type: event
+      agent: client_agent
+      method: startClient
+      args: {}
+
+    # Stops the client after 5 minutes, which then triggers the server to stop
+    - type: trigger
+      triggers: [ { timeout: 300000 } ]
+
+    - type: event
+      agent: client_agent
+      method: stopClient
+      trigger: clientStopped
+      args: {}
+
+################################################################################################
+### End of clientstream
+################################################################################################
+
+################################################################################################
+### 3. Monitors
+################################################################################################
+  monitor:
+      # Start tcpdump collection for server and clients
+    - type: event
+      agent: dump_server_agent
+      method: startCollection
+      args: { destination: "clientnode-1", expression: "" }
+    - type: event
+      agent: dump_client_agent
+      method: startCollection
+      args: { destination: "servernode", expression: "" }
+
+      # Configure python logging scripts
+    - type: event
+      agent: log_server_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/run_argus_daemon.sh" }
+    - type: event
+      agent: log_client_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/run_argus_daemon.sh" }
+      
+    # Actually runs the scripts
+    - type: event
+      agent: log_server_agent
+      method: start
+      args: {}
+    - type: event
+      agent: log_client_agent
+      method: start
+      args: {}
+
+    - type: trigger
+      triggers: [ { event: clientStopped } ]
+
+      # 2 second delay after server stops
+    - type: trigger
+      triggers: [ { timeout: 2000 } ]
+
+      # Kill python logging scripts
+    - type: event
+      agent: log_server_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/kill_argus_daemon.sh" }
+
+    - type: event
+      agent: log_client_agent
+      method: setConfiguration
+      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/kill_argus_daemon.sh" }
+     
+    # Actually runs the script to kill the python logging scripts
+    - type: event
+      agent: log_server_agent
+      method: start
+      args: {}
+
+    - type: event
+      agent: log_client_agent
+      method: start
+      args: {}
+
+    # stop the agents
+    - type: event
+      agent: log_server_agent
+      method: stop
+      args: {}
+      
+    - type: event
+      agent: log_client_agent
+      method: stop
+      args: {}
+
+    # Next 3 events sequentially stop collection for server and clients
+    - type: event
+      agent: dump_server_agent
+      method: stopCollection
+      trigger: serverCollectionStopped
+      args: {}
+    - type: trigger
+      triggers: [ {event: serverCollectionStopped} ]
+
+    - type: event
+      agent: dump_client_agent
+      method: stopCollection
+      trigger: clientCollectionStopped
+      args: {}
+    - type: trigger
+      triggers: [ {event: clientCollectionStopped} ]
+
+    # Next 3 events archive the tcp dumps for server and clients
+    - type: event
+      agent: dump_server_agent
+      method: archiveDump
+      trigger: serverDumped
+      args: { archivepath: /proj/ILLpuzzle/results/ }
+    - type: trigger
+      triggers: [ {event: serverDumped} ]
+
+    - type: event
+      agent: dump_client_agent
+      method: archiveDump
+      trigger: allFilesArchived # Triggers the cleanup stream
+      args: { archivepath: /proj/ILLpuzzle/results/ }
+
+################################################################################################
+### End of monitorstream
+################################################################################################
+
+################################################################################################
+### 5. Exit events
+################################################################################################
+  cleanupstream:
+    - type: trigger
+      triggers: [ {event: allFilesArchived, target: exit} ]
+
+################################################################################################
+### End of File
+################################################################################################
