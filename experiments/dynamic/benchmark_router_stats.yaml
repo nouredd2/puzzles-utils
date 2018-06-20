@@ -1,24 +1,18 @@
 # Agent activation language file containing procedure for magi experiment that will
-# run an connection depletion attack against the target server using all of the attack
-# nodes.
-#
-# Attak starts 1 minutes after the simluation starts, lasts for 2 minutes and then ends.
-# The simulation recovers for the last 2 minutes before concluding. 
-#
-# This file differs from the previous ones in that it sets up bandwidth data collection on
-# the routers and dumps the results into a mongodb database on these nodes. 
+# run a benchmark apache2 experiment to have ground truth performance. 
 #
 
 groups:
-  attack_group: [attacknode-1, attacknode-2, attacknode-3, attacknode-4, attacknode-5,
-                 attacknode-6, attacknode-7, attacknode-8, attacknode-9, attacknode-10]
   server_group: &slist [servernode]
-  client_group: [clientnode-1, clientnode-2, clientnode-3, clientnode-4, clientnode-5, clientnode-6, clientnode-7,
-                 clientnode-8, clientnode-9, clientnode-10, clientnode-11, clientnode-12, clientnode-13, clientnode-14, clientnode-15]
+  client_group: [clientnode-1, clientnode-2, clientnode-3, clientnode-4, clientnode-5,
+                 clientnode-6, clientnode-7, clientnode-8, clientnode-9, clientnode-10,
+                 clientnode-11, clientnode-12, clientnode-13, clientnode-14, clientnode-15,
+                 attacknode-1, attacknode-2, attacknode-3, attacknode-4, attacknode-5,
+                 attacknode-6, attacknode-7, attacknode-8, attacknode-9, attacknode-10]
   monitor_group: [router1, router2, router3]
 
 agents:
-  # For running the main scripts on the server, clients, and attackers (the actual connection attempts
+  # For running the main scripts on the server and clients (the actual connection attempts
   # and sending/receiving of puzzles)
   server_agent:
     group: server_group
@@ -28,12 +22,6 @@ agents:
     group: client_group
     path: /share/magi/modules/http_client/http_client.tar.gz
     execargs: {servers: *slist, interval: 'expo(20)', sizes: '10000'}
-
-  # nping for flood
-  nping_agent:
-    group: attack_group
-    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
-    execargs: []
 
   # agent to set the difficulty at the server end
   # uses our custom runcmd modified agent
@@ -51,22 +39,14 @@ agents:
     group: client_group
     path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
     execargs: []
-  log_attack_agent:
-    group: attack_group
-    path: /proj/ILLpuzzle/modules/runcmd/runcmd.tar.gz
-    execargs: []
 
-  # For running tcpdump on the server, clients, and attackers
+  # For running tcpdump on the server and clients
   dump_server_agent:
     group: server_group
     path: /share/magi/modules/tcpdump/tcpdump.tar.gz
     execargs: [] # tcpdump takes no command line args
   dump_client_agent:
     group: client_group
-    path: /share/magi/modules/tcpdump/tcpdump.tar.gz
-    execargs: []
-  dump_attack_agent:
-    group: attack_group
     path: /share/magi/modules/tcpdump/tcpdump.tar.gz
     execargs: []
 
@@ -82,7 +62,7 @@ agents:
     execargs: {}
 
 # The mapping from the AAL procedure to the experiment apparatus
-streamstarts: [serverstream, clientstream, attackstream, monitor, cleanupstream]
+streamstarts: [serverstream, clientstream, monitor, cleanupstream]
 
 eventstreams:
 ################################################################################################
@@ -150,7 +130,7 @@ eventstreams:
       agent: diff_agent
       method: stop
       args: {}
-      
+
     - type: event
       agent: router_monitor_agent
       method: stopCollection
@@ -197,67 +177,16 @@ eventstreams:
 ################################################################################################
 
 ################################################################################################
-### 3. Attacker
-################################################################################################
-  attackstream:
-    - type: trigger
-      triggers: [ { event: serverStarted } ]
-
-    # Attack starts after 1 minutes
-    - type: trigger
-      triggers: [ { timeout: 60000 } ]
-
-    - type: event
-      agent: nping_agent
-      method: setConfiguration
-      trigger: attackStarted
-      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/run_nping.sh 500" }
-
-    - type: event
-      agent: nping_agent
-      method: start
-      args: {}
-
-    # Attack ends after 2 minutes
-    - type: trigger
-      triggers: [ { timeout: 120000 } ]
-
-    - type: event
-      agent: nping_agent
-      method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/kill_nping.sh" }
-
-    # Starts the script that kills nping
-    - type: event
-      agent: nping_agent
-      method: start
-      args: {}
-
-    # Technically unncessary but this can't hurt
-    - type: event
-      agent: nping_agent
-      method: stop
-      args: {}
-      
-################################################################################################
-### End of clientstream
-################################################################################################
-
-################################################################################################
-### 4. Monitors
+### 3. Monitors
 ################################################################################################
   monitor:
-      # Start tcpdump collection for server, clients, and attackers
+      # Start tcpdump collection for server and clients
     - type: event
       agent: dump_server_agent
       method: startCollection
       args: { destination: "clientnode-1", expression: "" }
     - type: event
       agent: dump_client_agent
-      method: startCollection
-      args: { destination: "servernode", expression: "" }
-    - type: event
-      agent: dump_attack_agent
       method: startCollection
       args: { destination: "servernode", expression: "" }
 
@@ -270,10 +199,6 @@ eventstreams:
       agent: log_client_agent
       method: setConfiguration
       args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/run_argus_daemon.sh" }
-    - type: event
-      agent: log_attack_agent
-      method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/run_argus_daemon.sh" }
       
     # Actually runs the scripts
     - type: event
@@ -282,10 +207,6 @@ eventstreams:
       args: {}
     - type: event
       agent: log_client_agent
-      method: start
-      args: {}
-    - type: event
-      agent: log_attack_agent
       method: start
       args: {}
 
@@ -301,25 +222,20 @@ eventstreams:
       agent: log_server_agent
       method: setConfiguration
       args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/kill_argus_daemon.sh" }
+
     - type: event
       agent: log_client_agent
       method: setConfiguration
       args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/kill_argus_daemon.sh" }
-    - type: event
-      agent: log_attack_agent
-      method: setConfiguration
-      args: { cmdstring: "/proj/ILLpuzzle/puzzles-utils/scripts/kill_argus_daemon.sh" }
-      # Actually runs the script to kill the python logging scripts
+     
+    # Actually runs the script to kill the python logging scripts
     - type: event
       agent: log_server_agent
       method: start
       args: {}
+
     - type: event
       agent: log_client_agent
-      method: start
-      args: {}
-    - type: event
-      agent: log_attack_agent
       method: start
       args: {}
 
@@ -328,16 +244,13 @@ eventstreams:
       agent: log_server_agent
       method: stop
       args: {}
+      
     - type: event
       agent: log_client_agent
       method: stop
       args: {}
-    - type: event
-      agent: log_attack_agent
-      method: stop
-      args: {}
 
-    # Next 3 events sequentially stop collection for server, clients, and attackers
+    # Next 3 events sequentially stop collection for server and clients
     - type: event
       agent: dump_server_agent
       method: stopCollection
@@ -354,15 +267,7 @@ eventstreams:
     - type: trigger
       triggers: [ {event: clientCollectionStopped} ]
 
-    - type: event
-      agent: dump_attack_agent
-      method: stopCollection
-      trigger: attackCollectionStopped
-      args: {}
-    - type: trigger
-      triggers: [ {event: attackCollectionStopped} ]
-
-    # Next 3 events archive the tcp dumps for server, clients, and attackers
+    # Next 3 events archive the tcp dumps for server and clients
     - type: event
       agent: dump_server_agent
       method: archiveDump
@@ -373,14 +278,6 @@ eventstreams:
 
     - type: event
       agent: dump_client_agent
-      method: archiveDump
-      trigger: clientDumped
-      args: { archivepath: /proj/ILLpuzzle/results/ }
-    - type: trigger
-      triggers: [ {event: clientDumped} ]
-
-    - type: event
-      agent: dump_attack_agent
       method: archiveDump
       trigger: allFilesArchived # Triggers the cleanup stream
       args: { archivepath: /proj/ILLpuzzle/results/ }
