@@ -1,8 +1,7 @@
 #!/bin/bash
 
 function usage {
-  CMD_LINE_OPTIONS_HELP='\n
-  Command line options:\n
+  CMD_LINE_OPTIONS_HELP='\n Command line options:\n
       -h                 Print this help function and exit\n
       -e  event_file     Set the experiment event file to $event_file\n
       -x  experiment     Set the experiment name to $experiment\n
@@ -65,35 +64,15 @@ if [ -z "$PROJ" ]; then
   echo "WARNING: Setting default project to $PROJ"
 fi
 
+
 set -x
-/share/magi/current/magi_orchestrator.py --experiment $EXP --project $PROJ --events $AAL
+cp $AAL $AAL.bak
+set +x
 
-# Copy argus daemon output from all clients, attackers, and server to shared /proj/ILLpuzzle/results directory
-cd /proj/ILLpuzzle/results
-#mkdir -p argusout
-#set +x
-#for (( i = 1; i <= 15; i++ )); do
-#  set -x
-#  scp -o StrictHostKeyChecking=no clientnode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus/argus.out .
-#  mv argus.out argusout/clientnode$i.out
-#  set +x
-#done
-#for (( i = 1; i <= 10; i++ )); do
-#  set -x
-#  scp -o StrictHostKeyChecking=no attacknode-$i.$EXP.$PROJ.isi.deterlab.net:/tmp/argus/argus.out .
-#  mv argus.out argusout/attacknode$i.out
-#  set +x
-#done
-#set -x
-#scp -o StrictHostKeyChecking=no servernode.$EXP.$PROJ.isi.deterlab.net:/tmp/argus/argus.out .
-#mv argus.out argusout/servernode.out
+for tt in 50 100 200 300 400 500 600 700 800 900 1000
+do
+  set +x
+  sed "s/set_timer.sh.*\"/set_timer.sh $tt\"/" $AAL.bak > ${AAL}_$tt
+  bash scripts/run_experiment.sh -x $EXP -p $PROJ -e ${AAL}_$tt -a ${ARCH_NAME}_$tt
+done
 
-# Tar the tcpdump cap files, argus daemon output files, and argus module output together
-sleep 10
-#mkdir -p moduleout
-#mv argus-module.txt moduleout/argus-module.txt
-tar -czvf results-$ARCH_NAME.tar.gz *.cap 
-# argusout/ moduleout/
-
-yes | rm *.cap
-# yes | rm -rf argusout moduleout
